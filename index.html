@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meu Controle Financeiro (Login e Nuvem)</title>
+    <title>Meu Controle Financeiro (Nuvem)</title>
     <style>
         :root {
             --primary-color: #007bff; --primary-dark: #0056b3; --secondary-color: #f4f7f9;
@@ -16,21 +16,21 @@
         
         #auth-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 1rem; }
         .auth-form-container { background-color: var(--card-bg); padding: 2rem; border-radius: 8px; box-shadow: var(--shadow); width: 100%; max-width: 400px; }
-        .auth-form-container h2 { text-align: center; color: var(--primary-dark); }
-        .auth-form-container .form-group { margin-bottom: 1rem; }
-        .auth-form-container .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; }
-        .auth-form-container .form-group input { width: 100%; padding: 0.75rem; border-radius: 5px; border: 1px solid var(--border-color); box-sizing: border-box; }
-        .auth-form-container button[type="submit"] { width: 100%; padding: 0.75rem; border: none; border-radius: 5px; background-color: var(--primary-color); color: white; font-size: 1rem; font-weight: bold; cursor: pointer; transition: background-color 0.2s; }
-        .auth-form-container button[type="submit"]:hover { background-color: var(--primary-dark); }
-        .auth-form-container .toggle-auth { text-align: center; margin-top: 1rem; font-size: 0.9rem; }
-        .auth-form-container .toggle-auth a { color: var(--primary-color); cursor: pointer; text-decoration: underline; }
-        .auth-error { color: var(--expenses-color); text-align: center; margin-bottom: 1rem; font-weight: bold; }
+        .auth-form-container h2 { text-align: center; color: var(--primary-dark); margin-top: 0; }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; }
+        .form-group input { width: 100%; padding: 0.75rem; border-radius: 5px; border: 1px solid var(--border-color); box-sizing: border-box; }
+        button[type="submit"] { width: 100%; padding: 0.75rem; border: none; border-radius: 5px; background-color: var(--primary-color); color: white; font-size: 1rem; font-weight: bold; cursor: pointer; transition: background-color 0.2s; }
+        button[type="submit"]:hover { background-color: var(--primary-dark); }
+        .toggle-auth { text-align: center; margin-top: 1rem; font-size: 0.9rem; }
+        .toggle-auth a { color: var(--primary-color); cursor: pointer; text-decoration: underline; }
+        .auth-error { color: var(--expenses-color); text-align: center; margin-bottom: 1rem; font-weight: bold; min-height: 1.2em; }
 
         #app-container { padding-bottom: 100px; }
         header { background: linear-gradient(90deg, var(--primary-color) 0%, var(--primary-dark) 100%); color: white; padding: 1rem 1.5rem; box-shadow: var(--shadow); position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; }
-        header h1 { margin: 0; font-size: 1.5rem; flex-grow: 1; text-align: center; margin-left: 40px; }
-        header .header-btn { background: none; border: none; color: white; font-size: 1.8rem; cursor: pointer; width: 40px; }
-        footer { position: fixed; bottom: 0; left: 0; width: 100%; background-color: var(--border-color); padding: 5px; text-align: center; font-size: 0.7rem; color: #6c757d; z-index: 100; }
+        header h1 { margin: 0; font-size: 1.5rem; flex-grow: 1; text-align: center; margin: 0 10px; }
+        .header-btn { background: none; border: none; color: white; font-size: 1.8rem; cursor: pointer; padding: 5px; }
+        footer { position: fixed; bottom: 0; left: 0; width: 100%; background-color: var(--border-color); padding: 5px; text-align: center; font-size: 0.8rem; color: #6c757d; z-index: 100; }
         main { padding: 1rem; }
         .fab { position: fixed; bottom: 45px; right: 25px; width: 60px; height: 60px; border-radius: 50%; background-color: var(--primary-color); color: white; font-size: 2.5rem; line-height: 56px; text-align: center; border: none; box-shadow: 0 6px 12px rgba(0,0,0,0.2); cursor: pointer; z-index: 1000; }
         .period-selector { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
@@ -57,6 +57,10 @@
         .modal-content { background-color: white; padding: 2rem; border-radius: 8px; width: 90%; max-width: 500px; box-shadow: 0 8px 16px rgba(0,0,0,0.2); max-height: 90vh; display: flex; flex-direction: column; }
         .modal-body { overflow-y: auto; }
         .modal-actions { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color); }
+        .modal-actions button, .confirm-btn, .cancel-btn { padding: 0.75rem 1.5rem; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; }
+        .cancel-btn { background-color: #6c757d; color: white; }
+        .confirm-btn, .delete-confirm-btn { background-color: var(--primary-color); color: white; }
+        .delete-confirm-btn { background-color: var(--expenses-color); }
     </style>
 </head>
 <body>
@@ -103,10 +107,10 @@
     </div>
 
     <!-- Modals -->
-    <div id="transaction-modal" class="modal-overlay"> <!-- ... (conteúdo dos modais igual à v6) ... --> </div>
-    <div id="wallets-modal" class="modal-overlay"> <!-- ... (conteúdo dos modais igual à v6) ... --> </div>
-    <div id="confirm-delete-modal" class="modal-overlay"> <!-- ... (conteúdo dos modais igual à v6) ... --> </div>
-    <div id="alert-modal" class="modal-overlay"> <!-- ... (conteúdo dos modais igual à v6) ... --> </div>
+    <div id="transaction-modal" class="modal-overlay"> <div class="modal-content"> <h2 id="modal-title">Novo Lançamento</h2> <div class="modal-body"> <form id="transaction-form"> <input type="hidden" id="transaction-id"> <div class="type-selector" style="display: flex; gap: 10px; margin-bottom: 1rem;"> <button type="button" id="type-revenue-btn" class="revenue" style="flex: 1; padding: 0.75rem;">Receita</button> <button type="button" id="type-expense-btn" class="expense" style="flex: 1; padding: 0.75rem;">Despesa</button> </div> <div class="form-group"> <label for="description">Descrição</label> <input type="text" id="description" required> </div> <div class="form-group"> <label for="amount">Valor</label> <input type="number" id="amount" step="0.01" min="0" required> </div> <div class="form-group"> <label for="date">Data</label> <input type="date" id="date" required> </div> <div class="form-group"> <label for="wallet">Carteira</label> <select id="wallet" required></select> </div> </form> </div> <div class="modal-actions"> <button type="button" class="cancel-btn">Cancelar</button> <button type="submit" form="transaction-form" class="confirm-btn">Salvar</button> </div> </div> </div>
+    <div id="wallets-modal" class="modal-overlay"> <div class="modal-content"> <h2>Gerenciar Carteiras</h2> <div class="modal-body"> <ul id="wallet-list"></ul> <form id="add-wallet-form" style="display: flex; gap: 10px; margin-top: 1rem;"> <input type="text" id="new-wallet-name" placeholder="Nome da nova carteira" required style="flex-grow:1;"> <button type="submit" class="confirm-btn">Adicionar</button> </form> </div> <div class="modal-actions"> <button type="button" class="cancel-btn">Fechar</button> </div> </div> </div>
+    <div id="confirm-delete-modal" class="modal-overlay"> <div class="modal-content" style="text-align: center;"> <h2>Confirmar Exclusão</h2> <p>Você tem certeza?</p> <div class="modal-actions"> <button type="button" class="cancel-btn">Cancelar</button> <button type="button" id="delete-confirm-btn" class="delete-confirm-btn">Excluir</button> </div> </div> </div>
+    <div id="alert-modal" class="modal-overlay"> <div class="modal-content" style="text-align: center;"> <h2>Aviso</h2> <p id="alert-message"></p> <div class="modal-actions"> <button type="button" class="cancel-btn confirm-btn">OK</button> </div> </div> </div>
 
     <!-- Firebase SDK -->
     <script type="module">
@@ -114,7 +118,7 @@
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, doc, addDoc, onSnapshot, updateDoc, deleteDoc, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- CONFIGURAÇÃO ---
+        // --- CONFIG ---
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         
@@ -131,13 +135,26 @@
         const showLoginBtn = document.getElementById('show-login');
         const logoutBtn = document.getElementById('logout-btn');
         const userEmailDisplay = document.getElementById('user-email-display');
-        // ... (resto dos elementos do DOM do app)
+        const walletsBtn = document.getElementById('wallets-btn');
+        const addTransactionBtn = document.getElementById('add-transaction-btn');
+        const prevMonthBtn = document.getElementById('prev-month-btn');
+        const nextMonthBtn = document.getElementById('next-month-btn');
+        const modals = {
+            transaction: document.getElementById('transaction-modal'),
+            wallets: document.getElementById('wallets-modal'),
+            confirmDelete: document.getElementById('confirm-delete-modal'),
+            alert: document.getElementById('alert-modal')
+        };
+        const transactionModalForm = document.getElementById('transaction-form');
+        const addWalletForm = document.getElementById('add-wallet-form');
+        const deleteConfirmBtn = document.getElementById('delete-confirm-btn');
 
         // --- APP STATE ---
         let currentUser = null;
         let wallets = [];
         let transactions = [];
         let currentDate = new Date();
+        let itemToDelete = null;
         let walletsUnsubscribe = null;
         let transactionsUnsubscribe = null;
 
@@ -160,7 +177,7 @@
             try {
                 await createUserWithEmailAndPassword(auth, email, password);
             } catch (error) {
-                errorDiv.textContent = "Erro: " + error.message;
+                errorDiv.textContent = "Erro: Senha fraca ou email já em uso.";
                 errorDiv.classList.remove('hidden');
             }
         });
@@ -197,56 +214,182 @@
             }
         });
 
-        // --- FIRESTORE & APP LOGIC ---
-        // (Aqui entra toda a lógica do app: render, modals, CRUD, etc.)
-        
+        // --- FIRESTORE & APP ---
+        function getCollections() {
+            if (!currentUser) throw new Error("Usuário não autenticado");
+            return {
+                wallets: collection(db, 'artifacts', appId, 'users', currentUser.uid, 'wallets'),
+                transactions: collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions')
+            };
+        }
+
         function setupFirestoreListeners(userId) {
-            const walletsRef = collection(db, 'artifacts', appId, 'users', userId, 'wallets');
-            const transactionsRef = collection(db, 'artifacts', appId, 'users', userId, 'transactions');
-            
-            walletsUnsubscribe = onSnapshot(walletsRef, (snapshot) => {
+            walletsUnsubscribe = onSnapshot(getCollections().wallets, (snapshot) => {
                 wallets = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 if (snapshot.docs.length === 0 && !snapshot.metadata.hasPendingWrites) {
-                    addDoc(walletsRef, { name: "Carteira Principal" });
+                    addDoc(getCollections().wallets, { name: "Carteira Principal" });
                 }
                 renderApp();
             });
 
-            transactionsUnsubscribe = onSnapshot(transactionsRef, (snapshot) => {
+            transactionsUnsubscribe = onSnapshot(getCollections().transactions, (snapshot) => {
                 transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 renderApp();
             });
         }
         
+        // --- RENDER ---
         function renderApp(){
-            // Função central para chamar todas as renderizações
-            if(!document.getElementById('app-container').classList.contains('hidden')){
+            if(currentUser) {
                 renderSummary();
-                // ... outras renderizações
+                renderTransactionList();
             }
         }
 
+        const formatCurrency = (value) => (value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
         function renderSummary() {
-            // (implementação completa da renderização do resumo)
             document.getElementById('current-month-display').textContent = currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-             const filtered = transactions.filter(t => {
+            const filtered = transactions.filter(t => {
                 const transactionDate = new Date(t.date);
                 const adjustedDate = new Date(transactionDate.valueOf() + transactionDate.getTimezoneOffset() * 60 * 1000);
                 return adjustedDate.getMonth() === currentDate.getMonth() && adjustedDate.getFullYear() === currentDate.getFullYear();
             });
-
             const totalRevenue = filtered.reduce((acc, t) => t.type === 'revenue' ? acc + t.amount : acc, 0);
             const totalExpenses = filtered.reduce((acc, t) => t.type === 'expense' ? acc + t.amount : acc, 0);
             const balance = totalRevenue - totalExpenses;
+            document.getElementById('total-revenue').textContent = formatCurrency(totalRevenue);
+            document.getElementById('total-expenses').textContent = formatCurrency(totalExpenses);
+            const balanceEl = document.getElementById('balance');
+            balanceEl.textContent = formatCurrency(balance);
+            balanceEl.style.color = balance < 0 ? 'var(--expenses-color)' : 'var(--balance-color)';
+        }
 
-            document.getElementById('total-revenue').textContent = (totalRevenue).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            document.getElementById('total-expenses').textContent = (totalExpenses).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-            document.getElementById('balance').textContent = (balance).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        function renderTransactionList() {
+            const listEl = document.getElementById('transaction-list');
+            const filtered = transactions.filter(t => {
+                const transactionDate = new Date(t.date);
+                const adjustedDate = new Date(transactionDate.valueOf() + transactionDate.getTimezoneOffset() * 60 * 1000);
+                return adjustedDate.getMonth() === currentDate.getMonth() && adjustedDate.getFullYear() === currentDate.getFullYear();
+            }).sort((a,b) => new Date(b.date) - new Date(a.date));
+
+            if (filtered.length === 0) {
+                listEl.innerHTML = `<div style="text-align: center; color: #6c757d; padding: 2rem;">Nenhum lançamento para este mês.</div>`;
+                return;
+            }
+            listEl.innerHTML = filtered.map(t => {
+                const wallet = wallets.find(w => w.id === t.walletId);
+                return `<div class="transaction-item ${t.type}" data-id="${t.id}"><div class="icon">${t.type === 'revenue' ? '📈' : '📉'}</div><div class="details"><p class="description">${t.description}</p><div class="meta"><span>${new Date(t.date).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</span> • <span>${wallet ? wallet.name : ''}</span></div></div><div class="amount" style="color: ${t.type === 'revenue' ? 'var(--revenue-color)' : 'var(--expenses-color)'}">${t.type === 'revenue' ? '+' : '-'} ${formatCurrency(t.amount)}</div><div class="transaction-actions"><button class="edit-btn" title="Editar">✏️</button><button class="delete-btn" title="Excluir">🗑️</button></div></div>`;
+            }).join('');
         }
         
-        // Adicionar o resto das funções de renderização e manipuladores de eventos aqui.
-        document.getElementById('prev-month-btn').addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); renderApp(); });
-        document.getElementById('next-month-btn').addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderApp(); });
+        // --- MODAL & CRUD ---
+        const openModal = (modal) => modal.classList.add('active');
+        const closeModal = (modal) => modal.classList.remove('active');
+        const showAlert = (message) => { document.getElementById('alert-message').textContent = message; openModal(modals.alert); };
+        
+        prevMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); renderApp(); });
+        nextMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderApp(); });
+        
+        addTransactionBtn.addEventListener('click', () => {
+            transactionModalForm.reset();
+            transactionModalForm.elements['transaction-id'].value = '';
+            document.getElementById('modal-title').textContent = 'Novo Lançamento';
+            document.getElementById('date').value = new Date().toISOString().split('T')[0];
+            const walletSelect = document.getElementById('wallet');
+            walletSelect.innerHTML = wallets.map(w => `<option value="${w.id}">${w.name}</option>`).join('');
+            if(wallets.length === 0) { showAlert("Crie uma carteira primeiro!"); return; }
+            document.getElementById('type-expense-btn').classList.add('active');
+            document.getElementById('type-revenue-btn').classList.remove('active');
+            openModal(modals.transaction);
+        });
+
+        transactionModalForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = transactionModalForm.elements['transaction-id'].value;
+            const transactionData = {
+                description: transactionModalForm.elements['description'].value,
+                amount: parseFloat(transactionModalForm.elements['amount'].value),
+                date: transactionModalForm.elements['date'].value,
+                walletId: transactionModalForm.elements['wallet'].value,
+                type: transactionModalForm.querySelector('.type-selector button.active').id.includes('revenue') ? 'revenue' : 'expense'
+            };
+            if (id) {
+                await updateDoc(doc(getCollections().transactions, id), transactionData);
+            } else {
+                await addDoc(getCollections().transactions, transactionData);
+            }
+            closeModal(modals.transaction);
+        });
+
+        // Event delegation for edit/delete buttons
+        document.getElementById('transaction-list').addEventListener('click', (e) => {
+             const editBtn = e.target.closest('.edit-btn');
+             const deleteBtn = e.target.closest('.delete-btn');
+             if(!editBtn && !deleteBtn) return;
+
+             const id = e.target.closest('.transaction-item').dataset.id;
+             if(deleteBtn){
+                 itemToDelete = { type: 'transaction', id };
+                 openModal(modals.confirmDelete);
+             } else if(editBtn){
+                 const t = transactions.find(tr => tr.id === id);
+                 if(!t) return;
+                 transactionModalForm.reset();
+                 transactionModalForm.elements['transaction-id'].value = t.id;
+                 document.getElementById('modal-title').textContent = 'Editar Lançamento';
+                 const walletSelect = document.getElementById('wallet');
+                 walletSelect.innerHTML = wallets.map(w => `<option value="${w.id}" ${w.id == t.walletId ? 'selected' : ''}>${w.name}</option>`).join('');
+                 transactionModalForm.elements['description'].value = t.description;
+                 transactionModalForm.elements['amount'].value = t.amount;
+                 transactionModalForm.elements['date'].value = t.date;
+                 document.getElementById('type-expense-btn').classList.toggle('active', t.type === 'expense');
+                 document.getElementById('type-revenue-btn').classList.toggle('active', t.type === 'revenue');
+                 openModal(modals.transaction);
+             }
+        });
+        
+        deleteConfirmBtn.addEventListener('click', async () => {
+            if(!itemToDelete) return;
+            if(itemToDelete.type === 'transaction') await deleteDoc(doc(getCollections().transactions, itemToDelete.id));
+            if(itemToDelete.type === 'wallet') {
+                const isInUse = transactions.some(t => t.walletId === itemToDelete.id);
+                if (isInUse) { showAlert("Não é possível excluir. A carteira está sendo usada."); }
+                else { await deleteDoc(doc(getCollections().wallets, itemToDelete.id)); }
+            }
+            closeModal(modals.confirmDelete);
+            itemToDelete = null;
+        });
+
+        // Wallets Modal
+        walletsBtn.addEventListener('click', () => {
+            const listEl = document.getElementById('wallet-list');
+            listEl.innerHTML = wallets.map(w => `<li><span>${w.name}</span><button class="delete-wallet-btn" data-id="${w.id}">🗑️</button></li>`).join('');
+            openModal(modals.wallets);
+        });
+        addWalletForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const input = document.getElementById('new-wallet-name');
+            const name = input.value.trim();
+            if (name) { await addDoc(getCollections().wallets, { name }); input.value = ''; }
+        });
+        document.getElementById('wallet-list').addEventListener('click', (e) => {
+            if(e.target.classList.contains('delete-wallet-btn')){
+                itemToDelete = { type: 'wallet', id: e.target.dataset.id };
+                openModal(modals.confirmDelete);
+            }
+        });
+        
+        // Generic close modal logic
+        Object.values(modals).forEach(modal => {
+            modal.addEventListener('click', e => { if (e.target === modal || e.target.classList.contains('cancel-btn')) closeModal(modal); });
+        });
+        transactionModalForm.querySelector('.type-selector').addEventListener('click', e => {
+            if(e.target.tagName === 'BUTTON'){
+                transactionModalForm.querySelector('.type-selector .active').classList.remove('active');
+                e.target.classList.add('active');
+            }
+        });
 
     </script>
 </body>
