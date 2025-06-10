@@ -1,364 +1,762 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Controle de Consórcio</title>
-    <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iIzQ3NTViZiI+PHBhdGggZD0iTTcuNSw3LjUgVjE2LjUgSDkuNSBWNy40OTk5OSBMNy41LDcuNVoiLz48cGF0aCBkPSJNMTEuNSw3LjUgVjEyLjUgSDEzLjUgVjcuNDk5OTkgTDExLjUsNy41WiIvPjxwYXRoIGQ9Ik0xNS41LDcuNSBWMTQuNSBIMTcuNSBWNy40OTk5OSBMMTUuNSw3LjVoiLz48cGF0aCBkPSJNMjIsMy41MDAwMSBDMjIsMy41MDAwMSAyMiw1IDIwLjUsNSBDMTksNSA4LDUgOCw1IEM2LjMzMzMzLDUgNSw2LjMzMzMzIDUsOCBDNSw4IDUsMTkgNSwxOSBDNSwyMC42NjY3IDYuMzMzMzMsMjIgOCwyMiBDOCwyMiAxOSwyMiAxOSwyMiBDMjAuNjY2NywyMiAyMiwyMC42NjY3IDIyLDE5IEwyMiwzLjUwMDAxIFoiIHRyYW5zZm9ybT0idHJhbnNsYXRlKC0yIC0xKSIvPjwvc3ZnPg==">
+    <title>Gerenciador Financeiro com Edição e Pagamento Flexível</title>
+    
+    <!-- Dependências -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Firebase SDK (versão compatível, não modular) -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #f3f4f6;
-        }
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb { background: #888; border-radius: 10px; }
-        ::-webkit-scrollbar-thumb:hover { background: #555; }
-        .highlight-contemplado { background-color: #ef4444 !important; color: white !important; font-weight: bold; }
-        .modal { display: none; }
-        .modal.active { display: flex; }
+        body { font-family: 'Inter', sans-serif; background-color: #0f172a; color: #e2e8f0; }
+        .card { background-color: #1e293b; border: 1px solid #334155; border-radius: 0.75rem; padding: 1.5rem; }
+        .form-input, .form-select { background-color: #334155; border: 1px solid #475569; color: #e2e8f0; border-radius: 0.5rem; padding: 0.5rem 0.75rem; }
+        .form-input::placeholder { color: #94a3b8; }
+        .btn { border-radius: 0.5rem; font-weight: 600; padding: 0.65rem 1.5rem; transition: all 0.2s ease; cursor: pointer; }
+        .btn-primary { background-color: #3b82f6; color: white; }
+        .btn-primary:hover { background-color: #2563eb; }
+        .btn-primary:disabled { background-color: #334155; cursor: not-allowed; }
+        .btn-secondary { background-color: #64748b; color: white; }
+        .btn-secondary:hover { background-color: #475569; }
+        .modal-backdrop { background-color: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px); }
+        .filter-btn { padding: 0.5rem 1rem; border: 1px solid #475569; }
+        .filter-btn.active { background-color: #3b82f6; color: white; border-color: #3b82f6; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #1e293b; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
     </style>
 </head>
-<body class="p-4 md:p-6 lg:p-8">
+<body class="antialiased">
 
-    <div class="max-w-7xl mx-auto">
-        <header class="mb-6">
-             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center">
-                <div>
-                    <h1 class="text-3xl font-bold text-gray-800">Painel de Controle de Consórcio</h1>
-                    <p class="text-gray-500 mt-1">Gerencie os participantes e pagamentos de forma fácil e visual.</p>
-                </div>
-                <div class="mt-4 sm:mt-0">
-                    <label for="productName" class="block text-sm font-medium text-gray-700">Produto do Consórcio:</label>
-                    <input type="text" id="productName" placeholder="Ex: Videogame, Celular..." class="mt-1 w-full sm:w-64 px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
-                </div>
-            </div>
+    <div class="container mx-auto p-4 md:p-6 max-w-7xl">
+        <!-- Cabeçalho -->
+        <header class="mb-6 text-center">
+            <h1 class="text-4xl font-bold text-white mb-2">Gerenciador Financeiro Analítico</h1>
+            <p id="loading" class="text-lg text-blue-400">Carregando dados...</p>
         </header>
 
-        <div id="dashboard" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-            <div class="bg-white p-4 rounded-lg shadow-md"><h2 class="text-sm font-medium text-gray-500">Total Geral Arrecadado</h2><p id="totalGeral" class="text-2xl font-bold text-gray-800 mt-1">R$ 0,00</p></div>
-            <div class="bg-white p-4 rounded-lg shadow-md"><h2 class="text-sm font-medium text-gray-500">Participantes</h2><p id="numParticipantes" class="text-2xl font-bold text-gray-800 mt-1">0</p></div>
-            <div class="bg-white p-4 rounded-lg shadow-md"><h2 class="text-sm font-medium text-gray-500">Contemplados</h2><p id="numContemplados" class="text-2xl font-bold text-gray-800 mt-1">0</p></div>
-            <div class="bg-white p-4 rounded-lg shadow-md"><h2 class="text-sm font-medium text-gray-500">Total Arrecadado no Mês</h2><div class="flex items-center mt-1"><p id="totalMes" class="text-2xl font-bold text-gray-800 mr-2">R$ 0,00</p><select id="mesReferencia" class="bg-gray-100 border-gray-300 rounded-md text-sm p-1"></select></div></div>
-        </div>
+        <!-- Seção de Resumo -->
+        <section class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-6">
+            <div class="card"><h2 class="text-lg font-semibold text-gray-400">Receita Efetivada</h2><p id="total-income" class="text-3xl font-bold text-green-400 mt-2">R$ 0,00</p></div>
+            <div class="card"><h2 class="text-lg font-semibold text-gray-400">Despesa Efetivada</h2><p id="total-expense" class="text-3xl font-bold text-red-400 mt-2">R$ 0,00</p></div>
+            <div class="card"><h2 class="text-lg font-semibold text-gray-400">Pendente no Período</h2><p id="total-pending" class="text-3xl font-bold text-yellow-400 mt-2">R$ 0,00</p></div>
+            <div class="card"><h2 class="text-lg font-semibold text-gray-400">Saldo Total</h2><p id="total-balance" class="text-3xl font-bold text-blue-400 mt-2">R$ 0,00</p></div>
+        </section>
 
-        <div class="bg-white rounded-lg shadow-md overflow-x-auto">
-            <table class="w-full text-sm text-left text-gray-600">
-                <thead class="text-xs text-gray-700 uppercase bg-gray-100">
-                    <tr>
-                        <th scope="col" class="px-4 py-3 min-w-[150px]">Nome do Cliente</th>
-                        <th scope="col" class="px-4 py-3 min-w-[120px]">Status</th>
-                        <th scope="col" class="px-4 py-3 min-w-[150px]">Mês da Contemplação</th>
-                        <th scope="col" class="px-4 py-3 min-w-[120px]">Valor Parcela</th>
-                        <th scope="col" class="px-4 py-3 min-w-[150px] text-right">Total Pago (Cliente)</th>
-                        <th scope="col" class="px-4 py-3 min-w-[120px] text-center">Ações</th>
-                    </tr>
-                </thead>
-                <tbody id="tabela-corpo"></tbody>
-                <tfoot class="font-semibold text-gray-700 bg-gray-100">
-                    <tr id="tabela-rodape"></tr>
-                </tfoot>
-            </table>
-        </div>
-
-        <div class="mt-8 bg-white p-6 rounded-lg shadow-md">
-            <h3 class="text-lg font-semibold text-gray-800 mb-4">Adicionar Novo Participante</h3>
-            <form id="formAdicionarCliente" class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                    <label for="nomeCliente" class="block text-sm font-medium text-gray-700">Nome do Cliente</label>
-                    <input type="text" id="nomeCliente" required class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+        <main class="grid grid-cols-1 lg:grid-cols-5 gap-6">
+            <!-- Coluna da Esquerda -->
+            <div class="lg:col-span-2 space-y-6">
+                <div class="card">
+                    <div class="flex justify-between items-center mb-4"><h3 class="text-xl font-bold">Minhas Carteiras</h3><button id="add-wallet-btn" class="btn btn-primary text-sm py-2 px-3">Nova</button></div>
+                    <div id="wallet-list" class="space-y-3 max-h-60 overflow-y-auto pr-2"></div>
                 </div>
-                <div>
-                    <label for="valorParcela" class="block text-sm font-medium text-gray-700">Valor da Parcela (R$)</label>
-                    <input type="number" id="valorParcela" required min="0" step="0.01" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500">
+                <div class="card">
+                    <h3 class="text-xl font-bold mb-4">Ações</h3>
+                    <div class="space-y-3">
+                         <button id="add-transaction-btn" class="w-full btn btn-primary">Nova Transação</button>
+                         <button id="add-transfer-btn" class="w-full btn btn-secondary">Transferência</button>
+                         <button id="import-csv-btn" class="w-full btn btn-secondary bg-teal-600 hover:bg-teal-700">Importar CSV</button>
+                    </div>
                 </div>
-                <div class="flex items-end"><button type="submit" class="w-full bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">Adicionar</button></div>
-            </form>
-        </div>
-    </div>
-    
-    <div id="delete-modal" class="modal fixed inset-0 bg-gray-900 bg-opacity-50 items-center justify-center">
-        <div class="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full">
-            <h3 class="text-lg font-bold text-gray-900">Confirmar Exclusão</h3>
-            <p class="mt-2 text-sm text-gray-600">Você tem certeza que deseja excluir este participante? Esta ação não pode ser desfeita.</p>
-            <div class="mt-6 flex justify-end space-x-3">
-                <button id="cancel-delete-btn" class="px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300">Cancelar</button>
-                <button id="confirm-delete-btn" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700">Excluir</button>
+                <div class="card">
+                    <h3 class="text-xl font-bold mb-4">Despesas por Categoria (Efetivadas)</h3>
+                    <div class="relative h-64"><canvas id="expenseChart"></canvas></div>
+                </div>
             </div>
-        </div>
+
+            <!-- Coluna da Direita -->
+            <div class="lg:col-span-3 card">
+                <div class="flex flex-wrap gap-4 items-center justify-between mb-4 pb-4 border-b border-slate-700">
+                    <h3 class="text-xl font-bold">Histórico</h3>
+                    <div class="flex flex-wrap gap-2">
+                        <select id="month-filter" class="form-select text-sm"></select>
+                        <select id="year-filter" class="form-select text-sm"></select>
+                        <div id="type-filter-group" class="flex rounded-md" role="group">
+                            <button type="button" data-type="all" class="filter-btn rounded-l-md active">Ambos</button>
+                            <button type="button" data-type="income" class="filter-btn">Receitas</button>
+                            <button type="button" data-type="expense" class="filter-btn rounded-r-md">Despesas</button>
+                        </div>
+                    </div>
+                </div>
+                <div id="transaction-list" class="space-y-3 max-h-[38rem] overflow-y-auto pr-2"></div>
+            </div>
+        </main>
     </div>
-
-
-<script>
-    // --- CONFIGURAÇÃO INICIAL ---
-    const meses = ["Jan/25", "Fev/25", "Mar/25", "Abr/25", "Mai/25", "Jun/25", "Jul/25", "Ago/25", "Set/25", "Out/25", "Nov/25", "Dez/25"];
     
-    // --- ELEMENTOS DO DOM ---
-    const productNameInput = document.getElementById('productName');
-    const tabelaCorpo = document.getElementById('tabela-corpo');
-    const tabelaRodape = document.getElementById('tabela-rodape');
-    const formAdicionarCliente = document.getElementById('formAdicionarCliente');
-    const mesReferenciaSelect = document.getElementById('mesReferencia');
-    const totalGeralEl = document.getElementById('totalGeral');
-    const numParticipantesEl = document.getElementById('numParticipantes');
-    const numContempladosEl = document.getElementById('numContemplados');
-    const totalMesEl = document.getElementById('totalMes');
-    const deleteModal = document.getElementById('delete-modal');
-    const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
-    const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
-    let participantIdToDelete = null;
-
-    // --- DADOS DA APLICAÇÃO ---
-    let appData = {
-        product: '',
-        participants: []
-    };
-
-    /**
-     * Carrega os dados do localStorage, fazendo a migração do formato antigo se necessário.
-     */
-    function carregarDados() {
-        const rawData = localStorage.getItem('consorcioData');
-        if (!rawData) {
-            // Se não há dados, usa a estrutura de exemplo
-            appData = {
-                product: 'Ex: Videogame, Celular',
-                participants: [
-                    { id: 1, nome: "Ana Silva", valorParcela: 500, status: "Contemplado", mesContemplacao: "Mar/25", pagamentos: {"Jan/25": 500, "Fev/25": 500, "Mar/25": 500} },
-                    { id: 2, nome: "Bruno Costa", valorParcela: 500, status: "Ativo", mesContemplacao: "", pagamentos: {"Jan/25": 500, "Fev/25": 500, "Mar/25": 0} },
-                ]
-            };
-            return;
-        }
-
-        const parsedData = JSON.parse(rawData);
-        
-        // **Mecanismo de Migração Automática**
-        if (Array.isArray(parsedData)) {
-            // Formato antigo detectado (só o array de participantes)
-            appData = {
-                product: '', // Adiciona o campo de produto
-                participants: parsedData
-            };
-            salvarDados(); // Salva no novo formato imediatamente
-        } else {
-            // Formato novo já em uso
-            appData = parsedData;
-        }
-    }
-
-    /**
-     * Salva o objeto de dados completo no localStorage.
-     */
-    function salvarDados() {
-        localStorage.setItem('consorcioData', JSON.stringify(appData));
-    }
-
-
-    function formatarMoeda(valor) {
-        return valor.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-    }
-
-    function renderizarTabela() {
-        tabelaCorpo.innerHTML = '';
-        
-        appData.participants.forEach(p => {
-            const tr = document.createElement('tr');
-            tr.className = 'bg-white border-b';
-            
-            let totalPagoCliente = 0;
-            let pagamentosHtml = '';
-
-            meses.forEach(mes => {
-                const pago = p.pagamentos[mes] || 0;
-                totalPagoCliente += pago;
-                const isContempladoNoMes = p.mesContemplacao === mes;
-                
-                pagamentosHtml += `<td class="px-4 py-2 ${isContempladoNoMes ? 'highlight-contemplado' : ''}"><input type="number" value="${pago}" min="0" data-id="${p.id}" data-mes="${mes}" class="w-24 bg-gray-50 border border-gray-300 rounded-md p-1 text-right focus:outline-none focus:ring-1 focus:ring-blue-500 payment-input"></td>`;
-            });
-
-            tr.innerHTML = `
-                <td class="px-4 py-2 font-medium text-gray-900">${p.nome}</td>
-                <td class="px-4 py-2"><select data-id="${p.id}" class="status-select bg-gray-50 border border-gray-300 rounded-md p-1"><option value="Ativo" ${p.status === 'Ativo' ? 'selected' : ''}>Ativo</option><option value="Contemplado" ${p.status === 'Contemplado' ? 'selected' : ''}>Contemplado</option><option value="Finalizado" ${p.status === 'Finalizado' ? 'selected' : ''}>Finalizado</option></select></td>
-                <td class="px-4 py-2"><select data-id="${p.id}" class="mes-contemplacao-select bg-gray-50 border border-gray-300 rounded-md p-1 w-full"><option value="">Nenhum</option>${meses.map(m => `<option value="${m}" ${p.mesContemplacao === m ? 'selected' : ''}>${m}</option>`).join('')}</select></td>
-                <td class="px-4 py-2">${formatarMoeda(p.valorParcela)}</td>
-                ${pagamentosHtml}
-                <td class="px-4 py-2 font-semibold text-right">${formatarMoeda(totalPagoCliente)}</td>
-                <td class="px-4 py-2 text-center">
-                    <button data-id="${p.id}" class="edit-btn p-1 text-blue-600 hover:text-blue-800" title="Editar Nome">&#9998;</button>
-                    <button data-id="${p.id}" class="delete-btn p-1 text-red-600 hover:text-red-800" title="Excluir Participante">&#128465;</button>
-                </td>
-            `;
-            tabelaCorpo.appendChild(tr);
-        });
-        
-        atualizarRodape();
-        atualizarDashboard();
-        adicionarEventListenersDinamicos();
-        salvarDados();
-    }
+    <!-- MODAIS -->
+    <div id="transaction-modal" class="fixed inset-0 z-50 items-center justify-center hidden"><div class="modal-backdrop absolute inset-0"></div><div class="relative card w-full max-w-lg m-4"><h3 id="transaction-modal-title" class="text-xl font-bold mb-4"></h3><form id="transaction-form" class="space-y-4"><input type="hidden" id="tr-id"><input type="hidden" id="tr-original-amount"><input type="hidden" id="tr-original-wallet"><input type="hidden" id="tr-original-status"><input type="hidden" id="tr-original-type"><div> <label for="tr-description" class="block text-sm font-medium">Descrição</label> <input type="text" id="tr-description" class="mt-1 block w-full form-input" required></div><div class="grid grid-cols-2 gap-4"><div> <label for="tr-amount" class="block text-sm font-medium">Valor (R$)</label> <input type="number" id="tr-amount" class="mt-1 block w-full form-input" step="0.01" required></div><div> <label for="tr-wallet" class="block text-sm font-medium">Carteira</label> <select id="tr-wallet" class="mt-1 block w-full form-select" required></select></div></div><div class="grid grid-cols-2 gap-4"><div> <label for="tr-type" class="block text-sm font-medium">Tipo</label> <select id="tr-type" class="mt-1 block w-full form-select"><option value="expense">Despesa</option><option value="income">Receita</option></select></div><div> <label for="tr-category" class="block text-sm font-medium">Categoria</label> <select id="tr-category" class="mt-1 block w-full form-select"><option>Moradia</option><option>Transporte</option><option>Alimentação</option><option>Saúde</option><option>Lazer</option><option>Educação</option><option>Salário</option><option>Investimentos</option><option>Presente</option><option>Pensão Alimentícia</option><option>Outros</option></select></div></div><div id="recurring-options-section" class="pt-2 border-t border-gray-600 space-y-3"><div class="flex items-center"><input id="tr-is-paid" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 bg-gray-700" checked><label for="tr-is-paid" class="ml-2 block text-sm">Transação já foi paga/recebida?</label></div><div class="flex items-center"><input id="tr-is-recurring" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 bg-gray-700"><label for="tr-is-recurring" class="ml-2 block text-sm">É recorrente ou parcelada?</label></div><div id="installments-field" class="hidden"><label for="tr-installments" class="block text-sm font-medium">Nº de Parcelas (0 para despesa fixa)</label><input type="number" id="tr-installments" class="mt-1 block w-full form-input" value="0" min="0"></div></div><div class="flex justify-end gap-3 pt-4"><button type="button" class="btn-close-modal btn btn-secondary">Cancelar</button><button type="submit" class="btn btn-primary">Salvar</button></div></form></div></div>
+    <div id="payment-confirm-modal" class="fixed inset-0 z-50 items-center justify-center hidden"><div class="modal-backdrop absolute inset-0"></div><div class="relative card w-full max-w-lg m-4"><h3 class="text-xl font-bold mb-4">Confirmar Pagamento</h3><p id="payment-confirm-description" class="mb-4 text-gray-300"></p><form id="payment-confirm-form" class="space-y-4"><input type="hidden" id="pc-id"><div class="grid grid-cols-2 gap-4"><div><label for="pc-amount" class="block text-sm font-medium">Valor Final</label><input type="number" id="pc-amount" class="mt-1 block w-full form-input" step="0.01" required></div><div><label for="pc-date" class="block text-sm font-medium">Data do Pagamento</label><input type="date" id="pc-date" class="mt-1 block w-full form-input" required></div></div><div><label for="pc-wallet" class="block text-sm font-medium">Pago com a Carteira</label><select id="pc-wallet" class="mt-1 block w-full form-select" required></select></div><div class="flex justify-end gap-3 pt-4"><button type="button" class="btn-close-modal btn btn-secondary">Cancelar</button><button type="submit" class="btn btn-primary">Confirmar</button></div></form></div></div>
+    <div id="wallet-modal" class="fixed inset-0 z-50 items-center justify-center hidden"><div class="modal-backdrop absolute inset-0"></div><div class="relative card w-full max-w-md m-4"><h3 class="text-xl font-bold mb-4">Nova Carteira</h3><form id="wallet-form" class="space-y-4"><div><label for="wallet-name" class="block text-sm font-medium">Nome da Carteira</label><input type="text" id="wallet-name" class="mt-1 block w-full form-input" required></div><div><label for="wallet-balance" class="block text-sm font-medium">Saldo Inicial (R$)</label><input type="number" id="wallet-balance" class="mt-1 block w-full form-input" step="0.01" value="0.00" required></div><div class="flex justify-end gap-3 pt-4"><button type="button" class="btn-close-modal btn btn-secondary">Cancelar</button><button type="submit" class="btn btn-primary">Criar</button></div></form></div></div>
+    <div id="transfer-modal" class="fixed inset-0 z-50 items-center justify-center hidden"><div class="modal-backdrop absolute inset-0"></div><div class="relative card w-full max-w-lg m-4"><h3 class="text-xl font-bold mb-4">Transferência</h3><form id="transfer-form" class="space-y-4"><div class="grid grid-cols-2 gap-4"><div><label for="transfer-from" class="block text-sm font-medium">Origem</label><select id="transfer-from" class="mt-1 block w-full form-select" required></select></div><div><label for="transfer-to" class="block text-sm font-medium">Destino</label><select id="transfer-to" class="mt-1 block w-full form-select" required></select></div></div><div><label for="transfer-amount" class="block text-sm font-medium">Valor (R$)</label><input type="number" id="transfer-amount" class="mt-1 block w-full form-input" step="0.01" required></div><div class="flex justify-end gap-3 pt-4"><button type="button" class="btn-close-modal btn btn-secondary">Cancelar</button><button type="submit" class="btn btn-primary">Transferir</button></div></form></div></div>
+    <div id="import-modal" class="fixed inset-0 z-50 items-center justify-center hidden"><div class="modal-backdrop absolute inset-0"></div><div class="relative card w-full max-w-2xl m-4"><h3 class="text-xl font-bold mb-4">Importar Histórico (via CSV)</h3><div class="space-y-4"><div class="p-4 bg-slate-800 rounded-lg"><h4 class="font-semibold text-lg mb-2">Instruções Importantes</h4><ul class="list-disc list-inside text-slate-300 space-y-2"><li>O importador processará **APENAS as linhas onde a coluna 'Já Pagou' for 'sim'**. Linhas com 'não' ou em branco serão ignoradas.</li><li>Crie um arquivo CSV limpo com as colunas: <code class="block bg-slate-900 px-2 py-1 rounded-md text-amber-300 mt-1 text-sm">Data,Descrição,Categoria,Valor,Carteira,Já Pagou</code></li><li>**Separador:** O arquivo deve usar **ponto e vírgula ( ; )** como separador de colunas.</li><li>**Formato da Data:** Use DD/MM/AAAA.</li><li>**Formato do Valor:** Use vírgula como separador decimal.</li></ul></div><div class="grid grid-cols-2 gap-4"><div><label class="block text-sm font-medium mb-2">1. Tipo de Transação a Importar:</label><select id="import-type" class="form-select w-full"><option value="expense">Despesa</option><option value="income">Receita</option></select></div><div><label class="block text-sm font-medium mb-2">2. Selecione o arquivo .csv:</label><input type="file" id="csv-file-input" accept=".csv" class="form-input w-full p-2"></div></div><div id="import-progress" class="hidden space-y-2"><p id="import-status" class="text-blue-300"></p><div class="w-full bg-slate-700 rounded-full h-2.5"><div id="import-progress-bar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div></div></div><div class="flex justify-end gap-3 pt-4"><button type="button" class="btn-close-modal btn btn-secondary">Fechar</button><button id="start-import-btn" class="btn btn-primary" disabled>Iniciar Importação</button></div></div></div>
     
-    function adicionarEventListenersDinamicos() {
-        document.querySelectorAll('.payment-input').forEach(i => i.addEventListener('change', handlePagamentoChange));
-        document.querySelectorAll('.status-select').forEach(s => s.addEventListener('change', handleStatusChange));
-        document.querySelectorAll('.mes-contemplacao-select').forEach(s => s.addEventListener('change', handleMesContemplacaoChange));
-        document.querySelectorAll('.edit-btn').forEach(b => b.addEventListener('click', handleEdit));
-        document.querySelectorAll('.delete-btn').forEach(b => b.addEventListener('click', handleDelete));
-    }
-
-    function atualizarRodape() {
-        let rodapeHtml = `<td colspan="4" class="px-4 py-3 text-right font-bold">TOTAIS DO MÊS:</td>`;
-        let totalGeralFinal = 0;
+    <!-- Lógica Principal -->
+    <script>
+        // --- CONFIGURAÇÃO E ESTADO GLOBAL ---
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         
-        meses.forEach(mes => {
-            const totalMes = appData.participants.reduce((acc, p) => acc + (p.pagamentos[mes] || 0), 0);
-            totalGeralFinal += totalMes;
-            rodapeHtml += `<td class="px-4 py-3 text-center font-bold">${formatarMoeda(totalMes)}</td>`;
-        });
+        let db, auth;
+        let userId = null;
+        let wallets = [];
+        let allTransactions = [];
+        let chart = null;
+        let walletsCollectionRef, transactionsCollectionRef, recurringExpensesCollectionRef;
+        let unsubscribeWallets, unsubscribeTransactions;
+
+        // --- FUNÇÕES UTILITÁRIAS ---
+        const openModal = (modal) => { if(modal) { modal.classList.remove('hidden'); modal.classList.add('flex');} };
+        const closeModal = (modal) => { if(modal) { modal.classList.add('hidden'); modal.classList.remove('flex');} };
+        const formatCurrency = (amount) => (amount != null ? amount : 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
         
-        rodapeHtml += `<td class="px-4 py-3 text-right font-bold">${formatarMoeda(totalGeralFinal)}</td><td></td>`;
-        tabelaRodape.innerHTML = rodapeHtml;
-    }
+        // --- INICIALIZAÇÃO DA APLICAÇÃO ---
+        function main() {
+            try {
+                firebase.initializeApp(firebaseConfig);
+                auth = firebase.auth();
+                db = firebase.firestore();
 
-    function atualizarDashboard() {
-        const totalGeral = appData.participants.reduce((acc, p) => acc + Object.values(p.pagamentos).reduce((soma, v) => soma + v, 0), 0);
-        const mesSelecionado = mesReferenciaSelect.value;
-        const totalMesSelecionado = appData.participants.reduce((acc, p) => acc + (p.pagamentos[mesSelecionado] || 0), 0);
-
-        totalGeralEl.textContent = formatarMoeda(totalGeral);
-        numParticipantesEl.textContent = appData.participants.length;
-        numContempladosEl.textContent = appData.participants.filter(p => p.status === 'Contemplado' || p.status === 'Finalizado').length;
-        totalMesEl.textContent = formatarMoeda(totalMesSelecionado);
-        productNameInput.value = appData.product;
-    }
-    
-    function popularCabecalhoEMeses() {
-        const headerRow = document.querySelector('thead tr');
-        const totalPagoHeader = headerRow.children[headerRow.children.length - 2];
-        const acoesHeader = headerRow.lastElementChild;
-        headerRow.innerHTML = ''; // Limpa para reconstruir
-        
-        // Recria os cabeçalhos fixos
-        headerRow.innerHTML = `
-            <th scope="col" class="px-4 py-3 min-w-[150px]">Nome do Cliente</th>
-            <th scope="col" class="px-4 py-3 min-w-[120px]">Status</th>
-            <th scope="col" class="px-4 py-3 min-w-[150px]">Mês da Contemplação</th>
-            <th scope="col" class="px-4 py-3 min-w-[120px]">Valor Parcela</th>
-        `;
-
-        meses.forEach(mes => {
-            const th = document.createElement('th');
-            th.scope = 'col';
-            th.className = 'px-4 py-3 min-w-[120px] text-center';
-            th.textContent = mes;
-            headerRow.appendChild(th);
-            
-            const option = document.createElement('option');
-            option.value = mes;
-            option.textContent = mes;
-            mesReferenciaSelect.appendChild(option);
-        });
-        
-        headerRow.appendChild(totalPagoHeader);
-        headerRow.appendChild(acoesHeader);
-    }
-
-    // --- HANDLERS ---
-    
-    function handlePagamentoChange(e) {
-        const participante = appData.participants.find(p => p.id === parseInt(e.target.dataset.id));
-        if (participante) {
-            participante.pagamentos[e.target.dataset.mes] = parseFloat(e.target.value) || 0;
-            renderizarTabela();
-        }
-    }
-
-    function handleStatusChange(e) {
-        const participante = appData.participants.find(p => p.id === parseInt(e.target.dataset.id));
-        if (participante) {
-            participante.status = e.target.value;
-            renderizarTabela();
-        }
-    }
-    
-    function handleMesContemplacaoChange(e) {
-        const participante = appData.participants.find(p => p.id === parseInt(e.target.dataset.id));
-        if (participante) {
-            participante.mesContemplacao = e.target.value;
-            if (e.target.value && participante.status === "Ativo") {
-                participante.status = "Contemplado";
+                auth.onAuthStateChanged(user => {
+                    if (user) {
+                        userId = user.uid;
+                        setupApplication();
+                    } else {
+                        document.getElementById('loading').textContent = 'Autenticando...';
+                        const token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+                        (token ? auth.signInWithCustomToken(token) : auth.signInAnonymously()).catch(err => {
+                            console.error("Auth Error:", err);
+                            document.getElementById('loading').textContent = 'Falha na autenticação.';
+                        });
+                    }
+                });
+            } catch (error) {
+                console.error("Firebase initialization failed:", error);
+                document.getElementById('loading').textContent = 'Falha ao iniciar o aplicativo.';
             }
-            renderizarTabela();
         }
-    }
-    
-    function handleEdit(e) {
-        const id = parseInt(e.currentTarget.dataset.id);
-        const participante = appData.participants.find(p => p.id === id);
-        if(!participante) return;
-        
-        const novoNome = prompt("Digite o novo nome para:", participante.nome);
-        if (novoNome && novoNome.trim() !== '') {
-            participante.nome = novoNome.trim();
-            renderizarTabela();
+
+        function setupApplication() {
+            walletsCollectionRef = db.collection(`artifacts/${appId}/users/${userId}/wallets`);
+            transactionsCollectionRef = db.collection(`artifacts/${appId}/users/${userId}/transactions`);
+            recurringExpensesCollectionRef = db.collection(`artifacts/${appId}/users/${userId}/recurring`);
+
+            initializeChart();
+            populateFilterMonths();
+            attachEventListeners();
+            attachFirestoreListeners();
+            processRecurringExpenses();
         }
-    }
 
-    function handleDelete(e) {
-        participantIdToDelete = parseInt(e.currentTarget.dataset.id);
-        deleteModal.classList.add('active');
-    }
-
-    formAdicionarCliente.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const nome = document.getElementById('nomeCliente').value;
-        const valorParcela = parseFloat(document.getElementById('valorParcela').value);
-        
-        if (nome && valorParcela > 0) {
-            const novoId = appData.participants.length > 0 ? Math.max(...appData.participants.map(p => p.id)) + 1 : 1;
-            const pagamentosIniciais = {};
-            meses.forEach(mes => pagamentosIniciais[mes] = 0);
+        // --- LÓGICA DE EVENTOS ---
+        function attachEventListeners() {
+            document.getElementById('add-wallet-btn').addEventListener('click', () => openModal(document.getElementById('wallet-modal')));
+            document.getElementById('add-transaction-btn').addEventListener('click', openNewTransactionModal);
+            document.getElementById('add-transfer-btn').addEventListener('click', () => openModal(document.getElementById('transfer-modal')));
+            document.getElementById('import-csv-btn').addEventListener('click', () => openModal(document.getElementById('import-modal')));
             
-            appData.participants.push({
-                id: novoId, nome: nome, valorParcela: valorParcela, status: 'Ativo',
-                mesContemplacao: '', pagamentos: pagamentosIniciais
+            document.querySelectorAll('.btn-close-modal').forEach(btn => btn.addEventListener('click', () => closeModal(btn.closest('.fixed'))));
+            
+            document.getElementById('transaction-form').addEventListener('submit', handleTransactionFormSubmit);
+            document.getElementById('payment-confirm-form').addEventListener('submit', handlePaymentConfirmFormSubmit);
+            document.getElementById('wallet-form').addEventListener('submit', handleWalletFormSubmit);
+            document.getElementById('transfer-form').addEventListener('submit', handleTransferFormSubmit);
+            document.getElementById('csv-file-input').addEventListener('change', () => { document.getElementById('start-import-btn').disabled = false; });
+            document.getElementById('start-import-btn').addEventListener('click', handleImportFormSubmit);
+
+
+            document.getElementById('transaction-list').addEventListener('click', handleTransactionListClick);
+            
+            document.getElementById('month-filter').addEventListener('change', applyFiltersAndRender);
+            document.getElementById('year-filter').addEventListener('change', applyFiltersAndRender);
+            document.getElementById('type-filter-group').addEventListener('click', handleTypeFilterClick);
+            document.getElementById('tr-is-recurring').addEventListener('change', e => {
+                document.getElementById('installments-field').style.display = e.target.checked ? 'block' : 'none';
+                document.getElementById('tr-is-paid').checked = !e.target.checked;
+                document.getElementById('tr-is-paid').disabled = e.target.checked;
+            });
+        }
+
+        // --- LÓGICA DO FIRESTORE ---
+        function attachFirestoreListeners() {
+            if (unsubscribeWallets) unsubscribeWallets();
+            unsubscribeWallets = walletsCollectionRef.onSnapshot(snapshot => {
+                wallets = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                wallets.sort((a, b) => a.name.localeCompare(b.name));
+                updateWalletUI();
+                updateTotalBalance();
+            }, error => console.error("Wallet listener error:", error));
+
+            if (unsubscribeTransactions) unsubscribeTransactions();
+            unsubscribeTransactions = transactionsCollectionRef.onSnapshot(snapshot => {
+                allTransactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                populateFilterYears();
+                applyFiltersAndRender();
+                document.getElementById('loading').style.display = 'none';
+            }, error => console.error("Transaction listener error:", error));
+        }
+        
+        // --- HANDLERS DE EVENTOS ---
+        function handleTransactionListClick(e) {
+            const editBtn = e.target.closest('.edit-btn');
+            const confirmPaymentBtn = e.target.closest('.confirm-payment-btn');
+            if (editBtn) openEditModal(editBtn.dataset.id);
+            if (confirmPaymentBtn) openPaymentConfirmModal(confirmPaymentBtn.dataset.id);
+        }
+
+        function handleTypeFilterClick(e) {
+            if (e.target.tagName === 'BUTTON') {
+                document.querySelector('#type-filter-group .active')?.classList.remove('active');
+                e.target.classList.add('active');
+                applyFiltersAndRender();
+            }
+        }
+
+        function handleTransactionFormSubmit(e) {
+            e.preventDefault();
+            const form = e.target;
+            const transactionId = form['tr-id'].value;
+            if (form['tr-is-recurring'].checked) {
+                handleCreateRecurringExpense(form);
+            } else if (transactionId) {
+                handleUpdateTransaction(form);
+            } else {
+                handleCreateTransaction(form);
+            }
+        }
+
+        async function handleImportFormSubmit() {
+            const fileInput = document.getElementById('csv-file-input');
+            const importType = document.getElementById('import-type').value;
+            const file = fileInput.files[0];
+            if (!file) { alert("Por favor, selecione um arquivo CSV."); return; }
+
+            Papa.parse(file, {
+                header: true,
+                skipEmptyLines: true,
+                delimiter: ";",
+                complete: async (results) => {
+                    try {
+                        if (results.errors.length) {
+                            console.error("CSV Parse Errors:", results.errors);
+                            alert("Erro ao ler o arquivo CSV. Verifique o formato e se o delimitador é ponto e vírgula (;).");
+                            return;
+                        }
+
+                        const paidRows = results.data.filter(row => row['Já Pagou']?.trim().toLowerCase() === 'sim');
+                        
+                        if (paidRows.length === 0) {
+                            alert("Nenhuma transação com 'Já Pagou' = 'sim' foi encontrada no arquivo.");
+                            return;
+                        }
+
+                        const walletNamesInCsv = [...new Set(paidRows.map(row => row.Carteira?.trim().toUpperCase()).filter(Boolean))];
+                        const existingWalletNames = wallets.map(w => w.name);
+                        const newWalletNames = walletNamesInCsv.filter(name => !existingWalletNames.includes(name));
+                        
+                        if (newWalletNames.length > 0) {
+                            const creationBatch = db.batch();
+                            newWalletNames.forEach(name => {
+                                const newWalletRef = walletsCollectionRef.doc();
+                                creationBatch.set(newWalletRef, { name, balance: 0, initialBalance: 0, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+                            });
+                            await creationBatch.commit();
+                            await new Promise(resolve => setTimeout(resolve, 1500)); 
+                        }
+                        
+                        const currentWalletsSnapshot = await walletsCollectionRef.get();
+                        const currentWallets = currentWalletsSnapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+                        
+                        let importedCount = 0, skippedCount = 0;
+                        const BATCH_SIZE = 400;
+                        
+                        for (let i = 0; i < paidRows.length; i += BATCH_SIZE) {
+                            const batch = db.batch();
+                            const chunk = paidRows.slice(i, i + BATCH_SIZE);
+
+                            for (const row of chunk) {
+                                let createdAt;
+                                try {
+                                    const dateStr = row.Data;
+                                    if (!dateStr || !/^\d{2}\/\d{2}\/\d{4}$/.test(dateStr)) throw new Error(`Formato de data inválido: ${dateStr}`);
+                                    const [day, month, year] = dateStr.split('/');
+                                    const dateObj = new Date(Date.UTC(year, month - 1, day));
+                                    if (isNaN(dateObj.getTime())) throw new Error(`Data inválida: ${dateStr}`);
+                                    createdAt = firebase.firestore.Timestamp.fromDate(dateObj);
+                                } catch (e) {
+                                    console.warn(`Pulando linha por data inválida: ${e.message}`, row);
+                                    skippedCount++; continue;
+                                }
+
+                                const walletName = row.Carteira?.trim().toUpperCase();
+                                const wallet = currentWallets.find(w => w.name === walletName);
+                                if (!wallet || !row.Descrição || !row.Valor) {
+                                    console.warn("Pulando linha por falta de campos obrigatórios.", row);
+                                    skippedCount++; continue;
+                                }
+                                
+                                const amount = parseFloat(String(row.Valor).replace("R$", "").replace(/\./g, '').replace(',', '.').trim());
+                                if (isNaN(amount)) {
+                                    console.warn("Pulando linha por valor inválido.", row);
+                                    skippedCount++; continue;
+                                }
+                                
+                                const newTransactionRef = transactionsCollectionRef.doc();
+                                batch.set(newTransactionRef, {
+                                    description: row.Descrição, amount, category: row.Categoria || "Importado",
+                                    type: importType, status: 'pago', walletId: wallet.id,
+                                    walletName: wallet.name, createdAt, paidAt: createdAt, imported: true
+                                });
+                                importedCount++;
+                            }
+                            if(batch._mutations.length > 0) await batch.commit();
+                        }
+                        
+                        await recalculateAllWalletBalances();
+                        alert(`${importedCount} transações importadas! ${skippedCount} linhas ignoradas.`);
+                        closeModal(document.getElementById('import-modal'));
+
+                    } catch(error) {
+                        console.error("Falha na importação:", error);
+                        alert("Ocorreu um erro durante a importação. Verifique o console para detalhes.");
+                    }
+                }
+            });
+        }
+
+        async function recalculateAllWalletBalances() {
+            const allTransSnapshot = await transactionsCollectionRef.get();
+            const allDbTransactions = allTransSnapshot.docs.map(d => d.data());
+            
+            const balanceMap = new Map();
+            const currentWalletsSnapshot = await walletsCollectionRef.get();
+            currentWalletsSnapshot.docs.forEach(doc => {
+                 balanceMap.set(doc.id, doc.data().initialBalance || 0);
+            });
+
+            allDbTransactions.filter(t => t.status === 'pago').forEach(t => {
+                if (balanceMap.has(t.walletId)) {
+                    const amount = t.type === 'income' ? t.amount : -t.amount;
+                    balanceMap.set(t.walletId, balanceMap.get(t.walletId) + amount);
+                }
+            });
+
+            const batch = db.batch();
+            for(const [walletId, newBalance] of balanceMap.entries()) {
+                const walletRef = walletsCollectionRef.doc(walletId);
+                batch.update(walletRef, { balance: newBalance });
+            }
+            if(batch._mutations.length > 0) await batch.commit();
+        }
+
+        function handlePaymentConfirmFormSubmit(e) { e.preventDefault(); handleConfirmPayment(e.target); }
+
+        async function handleWalletFormSubmit(e) {
+            e.preventDefault();
+            const form = e.target;
+            const name = form['wallet-name'].value;
+            const balance = parseFloat(form['wallet-balance'].value);
+            await walletsCollectionRef.add({ name: name.trim().toUpperCase(), balance, initialBalance: balance, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+            form.reset();
+            closeModal(document.getElementById('wallet-modal'));
+        }
+
+        async function handleTransferFormSubmit(e) {
+            e.preventDefault();
+            const form = e.target;
+            const fromId = form['transfer-from'].value;
+            const toId = form['transfer-to'].value;
+            const amount = parseFloat(form['transfer-amount'].value);
+            if (fromId === toId || !amount > 0) return;
+            
+            const fromWallet = wallets.find(w => w.id === fromId);
+            const toWallet = wallets.find(w => w.id === toId);
+
+            const batch = db.batch();
+            const fromRef = walletsCollectionRef.doc(fromId);
+            batch.update(fromRef, { balance: fromWallet.balance - amount });
+
+            const toRef = walletsCollectionRef.doc(toId);
+            batch.update(toRef, { balance: toWallet.balance + amount });
+            
+            await batch.commit();
+            form.reset();
+            closeModal(document.getElementById('transfer-modal'));
+        }
+
+
+        // --- LÓGICA DE NEGÓCIOS ---
+        async function handleCreateRecurringExpense(form) {
+             const totalInstallments = parseInt(form['tr-installments'].value, 10);
+             const expenseData = {
+                 description: form['tr-description'].value,
+                 amount: parseFloat(form['tr-amount'].value),
+                 category: form['tr-category'].value,
+                 walletId: form['tr-wallet'].value,
+                 type: form['tr-type'].value,
+                 isInstallment: totalInstallments > 0,
+                 totalInstallments: totalInstallments,
+                 currentInstallment: 0,
+                 dayOfMonth: new Date().getDate(),
+                 startDate: firebase.firestore.FieldValue.serverTimestamp(),
+                 lastProcessedDate: new Date(1970, 0, 1)
+             };
+             await recurringExpensesCollectionRef.add(expenseData);
+             await processRecurringExpenses(true);
+             closeModal(document.getElementById('transaction-modal'));
+        }
+
+        async function processRecurringExpenses(force = false) {
+             const now = new Date();
+             const currentMonth = now.getMonth();
+             const currentYear = now.getFullYear();
+
+             const querySnapshot = await recurringExpensesCollectionRef.get();
+             if (querySnapshot.empty) return;
+
+             const batch = db.batch();
+
+             for (const doc of querySnapshot.docs) {
+                 const expense = { id: doc.id, ...doc.data() };
+                 const lastProcessed = expense.lastProcessedDate.toDate();
+                 
+                 const shouldProcess = (force || lastProcessed.getFullYear() < currentYear || (lastProcessed.getFullYear() === currentYear && lastProcessed.getMonth() < currentMonth));
+                 const isFinished = expense.isInstallment && expense.currentInstallment >= expense.totalInstallments;
+
+                 if (!isFinished && shouldProcess) {
+                     const description = expense.isInstallment 
+                         ? `${expense.description} (${expense.currentInstallment + 1}/${expense.totalInstallments})`
+                         : expense.description;
+                     
+                     const transactionData = {
+                         description: description,
+                         amount: expense.amount,
+                         type: expense.type,
+                         category: expense.category,
+                         walletId: expense.walletId,
+                         walletName: wallets.find(w => w.id === expense.walletId)?.name || 'N/A',
+                         status: 'pendente',
+                         createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                         paidAt: null,
+                         recurringSourceId: expense.id
+                     };
+                     const newTransactionRef = transactionsCollectionRef.doc();
+                     batch.set(newTransactionRef, transactionData);
+
+                     const expenseRef = recurringExpensesCollectionRef.doc(expense.id);
+                     batch.update(expenseRef, {
+                         lastProcessedDate: now,
+                         currentInstallment: expense.currentInstallment + 1
+                     });
+                 }
+             }
+             if (!batch.empty) await batch.commit();
+        }
+
+        async function handleCreateTransaction(form) {
+            const isPaid = form['tr-is-paid'].checked;
+            const amount = parseFloat(form['tr-amount'].value);
+            const type = form['tr-type'].value;
+            const walletId = form['tr-wallet'].value;
+
+            const batch = db.batch();
+            const transactionData = {
+                description: form['tr-description'].value, amount, type, walletId,
+                walletName: wallets.find(w=>w.id === walletId)?.name || 'N/A',
+                category: form['tr-category'].value,
+                status: isPaid ? 'pago' : 'pendente',
+                createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+                paidAt: isPaid ? firebase.firestore.FieldValue.serverTimestamp() : null,
+                imported: false
+            };
+            const newTransactionRef = transactionsCollectionRef.doc();
+            batch.set(newTransactionRef, transactionData);
+
+            if (isPaid) {
+                const walletRef = walletsCollectionRef.doc(walletId);
+                const wallet = wallets.find(w => w.id === walletId);
+                const newBalance = type === 'income' ? wallet.balance + amount : wallet.balance - amount;
+                batch.update(walletRef, { balance: newBalance });
+            }
+            await batch.commit();
+            closeModal(document.getElementById('transaction-modal'));
+        }
+
+        async function handleUpdateTransaction(form) {
+            const transactionId = form['tr-id'].value;
+            const originalStatus = form['tr-original-status'].value;
+            const originalWalletId = form['tr-original-wallet'].value;
+            const originalAmount = parseFloat(form['tr-original-amount'].value);
+            const originalType = form['tr-original-type'].value;
+
+            const newStatus = form['tr-is-paid'].checked ? 'pago' : 'pendente';
+            const newAmount = parseFloat(form['tr-amount'].value);
+            const newWalletId = form['tr-wallet'].value;
+            const newType = form['tr-type'].value;
+            
+            const batch = db.batch();
+            const balanceChanges = new Map();
+            const adjustBalance = (walletId, amount) => {
+                balanceChanges.set(walletId, (balanceChanges.get(walletId) || 0) + amount);
+            };
+
+            if (originalStatus === 'pago') {
+                const reversalAmount = originalType === 'income' ? -originalAmount : originalAmount;
+                adjustBalance(originalWalletId, reversalAmount);
+            }
+            if (newStatus === 'pago') {
+                const newEffectAmount = newType === 'income' ? newAmount : -newAmount;
+                adjustBalance(newWalletId, newEffectAmount);
+            }
+            
+            for (const [walletId, change] of balanceChanges.entries()) {
+                const wallet = wallets.find(w => w.id === walletId);
+                if (wallet) {
+                    const walletRef = walletsCollectionRef.doc(walletId);
+                    batch.update(walletRef, { balance: wallet.balance + change });
+                }
+            }
+            
+            const transactionRef = transactionsCollectionRef.doc(transactionId);
+            const transactionToUpdate = allTransactions.find(t=>t.id === transactionId);
+            batch.update(transactionRef, {
+                description: form['tr-description'].value, amount: newAmount, walletId: newWalletId,
+                walletName: wallets.find(w=>w.id === newWalletId)?.name || 'N/A',
+                type: newType, category: form['tr-category'].value, status: newStatus,
+                paidAt: newStatus === 'pago' ? (transactionToUpdate.paidAt || firebase.firestore.FieldValue.serverTimestamp()) : null
+            });
+
+            await batch.commit();
+            closeModal(document.getElementById('transaction-modal'));
+        }
+
+        async function handleConfirmPayment(form) {
+            const transactionId = form['pc-id'].value;
+            const finalAmount = parseFloat(form['pc-amount'].value);
+            const finalWalletId = form['pc-wallet'].value;
+            const paymentDate = new Date(form['pc-date'].value.replace(/-/g, '\/'));
+
+            const transaction = allTransactions.find(t => t.id === transactionId);
+            const wallet = wallets.find(w => w.id === finalWalletId);
+            if (!transaction || !wallet) return;
+
+            const batch = db.batch();
+            const transactionRef = transactionsCollectionRef.doc(transactionId);
+            batch.update(transactionRef, {
+                status: 'pago', paidAt: firebase.firestore.Timestamp.fromDate(paymentDate),
+                amount: finalAmount, walletId: finalWalletId, walletName: wallet.name
+            });
+
+            const newBalance = transaction.type === 'income' ? wallet.balance + finalAmount : wallet.balance - finalAmount;
+            const walletRef = walletsCollectionRef.doc(finalWalletId);
+            batch.update(walletRef, { balance: newBalance });
+
+            await batch.commit();
+            closeModal(document.getElementById('payment-confirm-modal'));
+        }
+
+        // --- LÓGICA DE MODAIS E UI ---
+        function openNewTransactionModal() {
+            const form = document.getElementById('transaction-form');
+            form.reset();
+            form['tr-id'].value = '';
+            document.getElementById('transaction-modal-title').textContent = 'Adicionar Transação';
+            document.getElementById('recurring-options-section').style.display = 'block';
+            openModal(document.getElementById('transaction-modal'));
+        }
+
+        function openEditModal(transactionId) {
+            const t = allTransactions.find(tr => tr.id === transactionId);
+            if (!t) return;
+            const form = document.getElementById('transaction-form');
+            form.reset();
+            document.getElementById('transaction-modal-title').textContent = 'Editar Transação';
+            document.getElementById('recurring-options-section').style.display = 'none';
+            form['tr-id'].value = t.id;
+            form['tr-original-amount'].value = t.amount;
+            form['tr-original-wallet'].value = t.walletId;
+            form['tr-original-status'].value = t.status;
+            form['tr-original-type'].value = t.type;
+            form['tr-description'].value = t.description;
+            form['tr-amount'].value = t.amount;
+            form['tr-wallet'].value = t.walletId;
+            form['tr-type'].value = t.type;
+            form['tr-category'].value = t.category;
+            form['tr-is-paid'].checked = t.status === 'pago';
+            openModal(document.getElementById('transaction-modal'));
+        }
+
+        function openPaymentConfirmModal(transactionId) {
+            const t = allTransactions.find(tr => tr.id === transactionId);
+            if (!t) return;
+            const form = document.getElementById('payment-confirm-form');
+            form.reset();
+            document.getElementById('payment-confirm-description').textContent = `Confirmando pagamento para: "${t.description}"`;
+            form['pc-id'].value = t.id;
+            form['pc-amount'].value = t.amount;
+            form['pc-wallet'].innerHTML = document.getElementById('tr-wallet').innerHTML;
+            form['pc-wallet'].value = t.walletId;
+            form['pc-date'].valueAsDate = new Date();
+            openModal(document.getElementById('payment-confirm-modal'));
+        }
+        
+        function applyFiltersAndRender() {
+            const selectedMonth = document.getElementById('month-filter').value;
+            const selectedYear = document.getElementById('year-filter').value;
+            const selectedType = document.querySelector('#type-filter-group .active')?.dataset.type || 'all';
+
+            let filtered = allTransactions.filter(t => {
+                if(!t.createdAt) return false;
+                const date = t.createdAt.toDate();
+                const monthMatch = selectedMonth === 'all' || date.getMonth() == selectedMonth;
+                const yearMatch = selectedYear === 'all' || date.getFullYear() == selectedYear;
+                const typeMatch = selectedType === 'all' || t.type === selectedType;
+                return monthMatch && yearMatch && typeMatch;
             });
             
-            renderizarTabela();
-            formAdicionarCliente.reset();
+            updateUI(filtered);
         }
-    });
-
-    // --- EVENT LISTENERS GLOBAIS ---
-    mesReferenciaSelect.addEventListener('change', atualizarDashboard);
-    productNameInput.addEventListener('input', (e) => {
-        appData.product = e.target.value;
-        salvarDados();
-    });
-    
-    // Modal listeners
-    cancelDeleteBtn.addEventListener('click', () => {
-        deleteModal.classList.remove('active');
-        participantIdToDelete = null;
-    });
-
-    confirmDeleteBtn.addEventListener('click', () => {
-        if (participantIdToDelete !== null) {
-            appData.participants = appData.participants.filter(p => p.id !== participantIdToDelete);
-            deleteModal.classList.remove('active');
-            participantIdToDelete = null;
-            renderizarTabela();
+        
+        function updateUI(filteredTransactions) {
+            renderTransactionList(filteredTransactions);
+            updateSummary(filteredTransactions);
+            updateChart(filteredTransactions);
         }
-    });
 
-    // --- INICIALIZAÇÃO DA APLICAÇÃO ---
-    window.onload = () => {
-        carregarDados();
-        popularCabecalhoEMeses();
-        renderizarTabela();
-    };
-</script>
+        function renderTransactionList(transactionsToRender) {
+             const listEl = document.getElementById('transaction-list');
+            listEl.innerHTML = '';
+            transactionsToRender.sort((a,b) => b.createdAt.toMillis() - a.createdAt.toMillis());
+
+            if (transactionsToRender.length === 0) {
+                listEl.innerHTML = '<p class="text-gray-400 text-center">Nenhuma transação encontrada para os filtros selecionados.</p>';
+                return;
+            }
+
+            transactionsToRender.forEach(t => {
+                if(t.type === 'transfer') return; 
+
+                const item = document.createElement('div');
+                const isPaid = t.status === 'pago';
+                item.className = `flex justify-between items-center p-3 rounded-lg hover:bg-slate-700/50 ${!isPaid ? 'opacity-60' : ''}`;
+                
+                let icon, sign, textColor;
+                if(t.type === 'income') { icon = 'M12 6v6m0 0v6m0-6h6m-6 0H6'; textColor = 'text-green-400'; sign = '+'; }
+                else { icon = 'M18 12H6'; textColor = 'text-red-400'; sign = '-'; }
+
+                const date = t.createdAt ? t.createdAt.toDate().toLocaleDateString('pt-BR') : '...';
+                
+                item.innerHTML = `
+                    <div class="flex items-center gap-4">
+                        <div class="p-2 rounded-full bg-slate-800"> <svg class="h-6 w-6 ${textColor}" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${icon}" /></svg> </div>
+                        <div> <p class="font-semibold text-white">${t.description}</p> <p class="text-sm text-gray-400">${t.category} • ${date}</p> </div>
+                    </div>
+                    <div class="text-right flex items-center gap-2">
+                        <span class="font-bold text-lg ${!isPaid ? 'text-yellow-400' : textColor}">${sign} ${formatCurrency(t.amount)}</span>
+                        <div class="w-24 flex justify-end gap-2">
+                        ${!isPaid ? `<button data-id="${t.id}" class="confirm-payment-btn btn btn-primary text-xs py-1 px-2">Pagar</button>` : ''}
+                        <button data-id="${t.id}" class="edit-btn text-gray-400 hover:text-white p-1"><svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7" /><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z" /></svg></button>
+                        </div>
+                    </div>
+                `;
+                listEl.appendChild(item);
+            });
+        }
+        
+        function updateSummary(filteredTransactions) {
+            const paidTransactions = filteredTransactions.filter(t => t.status === 'pago');
+            const pendingTransactions = filteredTransactions.filter(t => t.status === 'pendente');
+            
+            const income = paidTransactions.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0);
+            const expense = paidTransactions.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0);
+            
+            const totalPending = pendingTransactions.reduce((acc, t) => acc + (t.type === 'income' ? t.amount : -t.amount), 0);
+
+            document.getElementById('total-income').textContent = formatCurrency(income);
+            document.getElementById('total-expense').textContent = formatCurrency(expense);
+            document.getElementById('total-pending').textContent = formatCurrency(totalPending);
+        }
+
+        function updateTotalBalance() {
+             const totalBalance = wallets.reduce((acc, w) => acc + w.balance, 0);
+             document.getElementById('total-balance').textContent = formatCurrency(totalBalance);
+        }
+
+        function updateWalletUI() {
+            const walletListEl = document.getElementById('wallet-list');
+            const selects = document.querySelectorAll('#tr-wallet, #transfer-from, #transfer-to, #pc-wallet');
+            walletListEl.innerHTML = '';
+            selects.forEach(s => s.innerHTML = '');
+            if(wallets.length === 0) { walletListEl.innerHTML = '<p class="text-gray-400 text-center">Crie uma carteira.</p>'; return;}
+            
+            wallets.forEach(w => {
+                const walletDiv = document.createElement('div');
+                walletDiv.className = 'flex justify-between items-center bg-slate-700 p-3 rounded-md';
+                walletDiv.innerHTML = `<div><p class="font-semibold text-white">${w.name}</p></div><p class="font-bold text-lg">${formatCurrency(w.balance)}</p>`;
+                walletListEl.appendChild(walletDiv);
+                const option = new Option(`${w.name}`, w.id);
+                selects.forEach(s => s.add(option.cloneNode(true)));
+            });
+        }
+        
+        function populateFilterYears() {
+            const yearFilter = document.getElementById('year-filter');
+            const years = new Set(allTransactions.map(t => t.createdAt?.toDate().getFullYear()).filter(Boolean));
+            const currentYear = new Date().getFullYear();
+            years.add(currentYear);
+            
+            const selectedValue = yearFilter.value;
+            yearFilter.innerHTML = '<option value="all">Todos os Anos</option>';
+            [...years].sort((a, b) => b - a).forEach(year => {
+                const option = new Option(year, year);
+                yearFilter.add(option);
+            });
+            yearFilter.value = selectedValue && [...years].includes(parseInt(selectedValue)) ? selectedValue : currentYear;
+        }
+
+        function populateFilterMonths(){
+            const monthFilter = document.getElementById('month-filter');
+            const months = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"];
+            const currentMonth = new Date().getMonth();
+
+            const selectedValue = monthFilter.value;
+            monthFilter.innerHTML = '<option value="all">Todos os Meses</option>';
+            months.forEach((month, index) => {
+                const option = new Option(month, index);
+                monthFilter.add(option);
+            });
+            monthFilter.value = selectedValue !== '' && selectedValue !== null ? selectedValue : currentMonth;
+        }
+
+        function initializeChart() { 
+            const ctx = document.getElementById('expenseChart').getContext('2d'); 
+            chart = new Chart(ctx, { type: 'doughnut', options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } });
+        }
+        
+        function updateChart(filteredTransactions) {
+            const expenseData = filteredTransactions
+                .filter(t => t.type === 'expense' && t.status === 'pago')
+                .reduce((acc, t) => {
+                    acc[t.category] = (acc[t.category] || 0) + t.amount;
+                    return acc;
+                }, {});
+            chart.data = {
+                labels: Object.keys(expenseData),
+                datasets: [{ data: Object.values(expenseData), backgroundColor: ['#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16', '#22c55e', '#10b981'], borderColor: '#1e293b', borderWidth: 3 }]
+            };
+            chart.update();
+        }
+        
+        document.addEventListener('DOMContentLoaded', main);
+    </script>
 </body>
 </html>
