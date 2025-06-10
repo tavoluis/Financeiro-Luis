@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meu Controle Financeiro (Nuvem)</title>
+    <title>Meu Controle Financeiro (IA)</title>
     <style>
         :root {
             --primary-color: #007bff; --primary-dark: #0056b3; --secondary-color: #f4f7f9;
@@ -28,7 +28,8 @@
 
         #app-container { padding-bottom: 100px; }
         header { background: linear-gradient(90deg, var(--primary-color) 0%, var(--primary-dark) 100%); color: white; padding: 1rem 1.5rem; box-shadow: var(--shadow); position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; }
-        header h1 { margin: 0; font-size: 1.5rem; flex-grow: 1; text-align: center; margin: 0 10px; }
+        header h1 { margin: 0; font-size: 1.2rem; flex-grow: 1; text-align: center; margin: 0 5px; }
+        @media (min-width: 600px) { header h1 {font-size: 1.5rem;} }
         .header-btn { background: none; border: none; color: white; font-size: 1.8rem; cursor: pointer; padding: 5px; }
         footer { position: fixed; bottom: 0; left: 0; width: 100%; background-color: var(--border-color); padding: 5px; text-align: center; font-size: 0.8rem; color: #6c757d; z-index: 100; }
         main { padding: 1rem; }
@@ -61,6 +62,8 @@
         .cancel-btn { background-color: #6c757d; color: white; }
         .confirm-btn, .delete-confirm-btn { background-color: var(--primary-color); color: white; }
         .delete-confirm-btn { background-color: var(--expenses-color); }
+        .loader { border: 4px solid #f3f3f3; border-top: 4px solid var(--primary-color); border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite; margin: 20px auto; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
@@ -90,11 +93,14 @@
         <header>
             <button id="logout-btn" class="header-btn" title="Sair">🚪</button>
             <h1>Meu Controle Financeiro</h1>
-            <button id="wallets-btn" class="header-btn" title="Gerenciar Carteiras">💼</button>
+            <div>
+                <button id="analyze-month-btn" class="header-btn" title="Analisar Mês com IA">✨</button>
+                <button id="wallets-btn" class="header-btn" title="Gerenciar Carteiras">💼</button>
+            </div>
         </header>
 
         <main>
-            <section id="dashboard">
+             <section id="dashboard">
                 <div class="period-selector"><button id="prev-month-btn">&lt;</button><h2 id="current-month-display"></h2><button id="next-month-btn">&gt;</button></div>
                 <div class="summary-cards"><div class="card revenue"><h3>Receita do Mês</h3><p id="total-revenue">R$ 0,00</p></div><div class="card expenses"><h3>Despesa do Mês</h3><p id="total-expenses">R$ 0,00</p></div><div class="card balance"><h3>Balanço</h3><p id="balance">R$ 0,00</p></div></div>
             </section>
@@ -111,6 +117,17 @@
     <div id="wallets-modal" class="modal-overlay"> <div class="modal-content"> <h2>Gerenciar Carteiras</h2> <div class="modal-body"> <ul id="wallet-list"></ul> <form id="add-wallet-form" style="display: flex; gap: 10px; margin-top: 1rem;"> <input type="text" id="new-wallet-name" placeholder="Nome da nova carteira" required style="flex-grow:1;"> <button type="submit" class="confirm-btn">Adicionar</button> </form> </div> <div class="modal-actions"> <button type="button" class="cancel-btn">Fechar</button> </div> </div> </div>
     <div id="confirm-delete-modal" class="modal-overlay"> <div class="modal-content" style="text-align: center;"> <h2>Confirmar Exclusão</h2> <p>Você tem certeza?</p> <div class="modal-actions"> <button type="button" class="cancel-btn">Cancelar</button> <button type="button" id="delete-confirm-btn" class="delete-confirm-btn">Excluir</button> </div> </div> </div>
     <div id="alert-modal" class="modal-overlay"> <div class="modal-content" style="text-align: center;"> <h2>Aviso</h2> <p id="alert-message"></p> <div class="modal-actions"> <button type="button" class="cancel-btn confirm-btn">OK</button> </div> </div> </div>
+    <div id="analysis-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2>✨ Análise Inteligente do Mês</h2>
+            <div class="modal-body" id="analysis-result">
+                <!-- O resultado da IA vai aqui -->
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="cancel-btn">Fechar</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Firebase SDK -->
     <script type="module">
@@ -136,6 +153,7 @@
         const logoutBtn = document.getElementById('logout-btn');
         const userEmailDisplay = document.getElementById('user-email-display');
         const walletsBtn = document.getElementById('wallets-btn');
+        const analyzeMonthBtn = document.getElementById('analyze-month-btn');
         const addTransactionBtn = document.getElementById('add-transaction-btn');
         const prevMonthBtn = document.getElementById('prev-month-btn');
         const nextMonthBtn = document.getElementById('next-month-btn');
@@ -143,11 +161,13 @@
             transaction: document.getElementById('transaction-modal'),
             wallets: document.getElementById('wallets-modal'),
             confirmDelete: document.getElementById('confirm-delete-modal'),
-            alert: document.getElementById('alert-modal')
+            alert: document.getElementById('alert-modal'),
+            analysis: document.getElementById('analysis-modal')
         };
         const transactionModalForm = document.getElementById('transaction-form');
         const addWalletForm = document.getElementById('add-wallet-form');
         const deleteConfirmBtn = document.getElementById('delete-confirm-btn');
+        const analysisResultEl = document.getElementById('analysis-result');
 
         // --- APP STATE ---
         let currentUser = null;
@@ -159,6 +179,23 @@
         let transactionsUnsubscribe = null;
 
         // --- AUTH LOGIC ---
+        function getAuthErrorMessage(errorCode) {
+            switch (errorCode) {
+                case 'auth/email-already-in-use':
+                    return 'Este email já foi cadastrado. Tente fazer o login.';
+                case 'auth/weak-password':
+                    return 'Sua senha precisa ter pelo menos 6 caracteres.';
+                case 'auth/invalid-credential':
+                case 'auth/user-not-found':
+                case 'auth/wrong-password':
+                    return 'Email ou senha não correspondem. Verifique os dados.';
+                case 'auth/invalid-email':
+                    return 'O formato do email é inválido.';
+                default:
+                    return 'Ocorreu um erro. Tente novamente.';
+            }
+        }
+
         showRegisterBtn.addEventListener('click', () => {
             loginForm.classList.add('hidden');
             registerForm.classList.remove('hidden');
@@ -177,7 +214,7 @@
             try {
                 await createUserWithEmailAndPassword(auth, email, password);
             } catch (error) {
-                errorDiv.textContent = "Erro: Senha fraca ou email já em uso.";
+                errorDiv.textContent = getAuthErrorMessage(error.code);
                 errorDiv.classList.remove('hidden');
             }
         });
@@ -191,7 +228,7 @@
             try {
                 await signInWithEmailAndPassword(auth, email, password);
             } catch (error) {
-                errorDiv.textContent = "Email ou senha inválidos.";
+                errorDiv.textContent = getAuthErrorMessage(error.code);
                 errorDiv.classList.remove('hidden');
             }
         });
@@ -225,7 +262,7 @@
 
         function setupFirestoreListeners(userId) {
             const collections = getCollections();
-            walletsUnsubscribe = onSnapshot(collections.wallets, (snapshot) => {
+            walletsUnsubscribe = onSnapshot(query(collections.wallets), (snapshot) => {
                 wallets = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 if (snapshot.docs.length === 0 && !snapshot.metadata.hasPendingWrites) {
                     addDoc(collections.wallets, { name: "Carteira Principal" });
@@ -233,7 +270,7 @@
                 renderApp();
             });
 
-            transactionsUnsubscribe = onSnapshot(collections.transactions, (snapshot) => {
+            transactionsUnsubscribe = onSnapshot(query(collections.transactions), (snapshot) => {
                 transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
                 renderApp();
             });
@@ -387,10 +424,73 @@
                 openModal(modals.confirmDelete);
             }
         });
+
+        // --- GEMINI API FUNCTION ---
+        async function handleAnalyzeMonth() {
+            const filteredTransactions = transactions.filter(t => {
+                const transactionDate = new Date(t.date);
+                const adjustedDate = new Date(transactionDate.valueOf() + transactionDate.getTimezoneOffset() * 60 * 1000);
+                return adjustedDate.getMonth() === currentDate.getMonth() && adjustedDate.getFullYear() === currentDate.getFullYear();
+            });
+
+            if (filteredTransactions.length === 0) {
+                showAlert("Não há lançamentos neste mês para analisar.");
+                return;
+            }
+
+            openModal(modals.analysis);
+            analysisResultEl.innerHTML = '<div class="loader"></div><p style="text-align:center;">Analisando seus dados...</p>';
+
+            const transactionsText = filteredTransactions.map(t => `${t.type === 'revenue' ? 'Receita' : 'Despesa'}: ${t.description} - ${formatCurrency(t.amount)}`).join('\n');
+            
+            const prompt = `
+                Como um assistente financeiro, analise os seguintes lançamentos de um usuário para o mês atual.
+                Seja breve, amigável e forneça insights úteis em português do Brasil.
+                Estruture sua resposta com:
+                1. Um resumo geral (1-2 frases).
+                2. As 3 maiores categorias de despesa.
+                3. Uma dica prática de economia baseada nos dados.
+
+                Aqui estão os lançamentos:
+                ${transactionsText}
+            `;
+
+            try {
+                let chatHistory = [{ role: "user", parts: [{ text: prompt }] }];
+                const payload = { contents: chatHistory };
+                const apiKey = ""; // Deixar vazio
+                const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                const result = await response.json();
+
+                if (result.candidates && result.candidates[0].content && result.candidates[0].content.parts[0]) {
+                    const analysisText = result.candidates[0].content.parts[0].text;
+                    analysisResultEl.innerHTML = analysisText.replace(/\n/g, '<br>');
+                } else {
+                    analysisResultEl.textContent = "Não foi possível gerar a análise. A resposta da IA estava vazia. Tente novamente.";
+                }
+            } catch (error) {
+                console.error("Erro ao chamar a API Gemini:", error);
+                analysisResultEl.textContent = "Ocorreu um erro de conexão ao tentar gerar a análise. Verifique sua internet e tente novamente.";
+            }
+        }
+        
+        analyzeMonthBtn.addEventListener('click', handleAnalyzeMonth);
         
         // Generic close modal logic
         Object.values(modals).forEach(modal => {
-            modal.addEventListener('click', e => { if (e.target === modal || e.target.classList.contains('cancel-btn')) closeModal(modal); });
+            if(modal){
+                modal.addEventListener('click', e => { if (e.target === modal || e.target.classList.contains('cancel-btn')) closeModal(modal); });
+            }
         });
         transactionModalForm.querySelector('.type-selector').addEventListener('click', e => {
             if(e.target.tagName === 'BUTTON'){
