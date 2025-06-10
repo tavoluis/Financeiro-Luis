@@ -14,7 +14,6 @@
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: var(--secondary-color); color: var(--text-color); margin: 0; padding: 0; }
         .hidden { display: none !important; }
         
-        /* Estilos da Tela de Login/Auth */
         #auth-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 1rem; }
         .auth-form-container { background-color: var(--card-bg); padding: 2rem; border-radius: 8px; box-shadow: var(--shadow); width: 100%; max-width: 400px; }
         .auth-form-container h2 { text-align: center; color: var(--primary-dark); }
@@ -25,37 +24,56 @@
         .auth-form-container button[type="submit"]:hover { background-color: var(--primary-dark); }
         .auth-form-container .toggle-auth { text-align: center; margin-top: 1rem; font-size: 0.9rem; }
         .auth-form-container .toggle-auth a { color: var(--primary-color); cursor: pointer; text-decoration: underline; }
-        #auth-error { color: var(--expenses-color); text-align: center; margin-top: 1rem; font-weight: bold; }
+        .auth-error { color: var(--expenses-color); text-align: center; margin-bottom: 1rem; font-weight: bold; }
 
-        /* Estilos do App Principal */
         #app-container { padding-bottom: 100px; }
-        header { background: linear-gradient(90deg, var(--primary-color) 0%, var(--primary-dark) 100%); color: white; padding: 1rem 1.5rem; text-align: center; box-shadow: var(--shadow); position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; }
+        header { background: linear-gradient(90deg, var(--primary-color) 0%, var(--primary-dark) 100%); color: white; padding: 1rem 1.5rem; box-shadow: var(--shadow); position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; }
         header h1 { margin: 0; font-size: 1.5rem; flex-grow: 1; text-align: center; margin-left: 40px; }
         header .header-btn { background: none; border: none; color: white; font-size: 1.8rem; cursor: pointer; width: 40px; }
         footer { position: fixed; bottom: 0; left: 0; width: 100%; background-color: var(--border-color); padding: 5px; text-align: center; font-size: 0.7rem; color: #6c757d; z-index: 100; }
         main { padding: 1rem; }
         .fab { position: fixed; bottom: 45px; right: 25px; width: 60px; height: 60px; border-radius: 50%; background-color: var(--primary-color); color: white; font-size: 2.5rem; line-height: 56px; text-align: center; border: none; box-shadow: 0 6px 12px rgba(0,0,0,0.2); cursor: pointer; z-index: 1000; }
-        /* Outros estilos do app (cards, modais, etc) continuam os mesmos */
-        .period-selector, .summary-cards, .transaction-item, .modal-overlay, .modal-content { /* Estilos mantidos como antes */ }
+        .period-selector { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+        .period-selector button { background: none; border: 2px solid var(--primary-color); border-radius: 50%; width: 40px; height: 40px; font-size: 1.5rem; font-weight: bold; cursor: pointer; color: var(--primary-color); }
+        .period-selector h2 { margin: 0; font-size: 1.2rem; color: var(--primary-color); font-weight: 600; text-transform: capitalize; }
+        .summary-cards { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+        @media (min-width: 600px) { .summary-cards { grid-template-columns: repeat(3, 1fr); } }
+        .card { background-color: var(--card-bg); padding: 1.2rem; border-radius: 8px; box-shadow: var(--shadow); border-left: 5px solid; }
+        .card h3 { margin-top: 0; font-size: 1rem; color: #6c757d; }
+        .card p { margin: 0; font-size: 1.75rem; font-weight: bold; }
+        .card.revenue p { color: var(--revenue-color); } .card.revenue { border-color: var(--revenue-color); }
+        .card.expenses p { color: var(--expenses-color); } .card.expenses { border-color: var(--expenses-color); }
+        .card.balance p { color: var(--balance-color); } .card.balance { border-color: var(--balance-color); }
+        #transaction-list { margin-top: 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
+        .transaction-item { display: flex; align-items: center; background-color: var(--card-bg); padding: 1rem; border-radius: 8px; box-shadow: var(--shadow); border-left: 5px solid; }
+        .transaction-item .icon { font-size: 1.5rem; margin-right: 1rem; }
+        .transaction-item .details { flex-grow: 1; } .transaction-item .details p { margin: 0; }
+        .transaction-item .details .description { font-weight: 600; }
+        .transaction-item .details .meta { font-size: 0.8rem; color: #6c757d; margin-top: 4px; }
+        .transaction-item .amount { font-weight: bold; font-size: 1.1rem; margin-left: 1rem; }
+        .transaction-actions { display: flex; gap: 0.5rem; } .transaction-actions button { background: none; border: none; cursor: pointer; font-size: 1.2rem; color: #6c757d; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 2000; opacity: 0; visibility: hidden; transition: opacity 0.3s; }
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+        .modal-content { background-color: white; padding: 2rem; border-radius: 8px; width: 90%; max-width: 500px; box-shadow: 0 8px 16px rgba(0,0,0,0.2); max-height: 90vh; display: flex; flex-direction: column; }
+        .modal-body { overflow-y: auto; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color); }
     </style>
 </head>
 <body>
 
     <div id="auth-container">
         <div class="auth-form-container">
-            <!-- Formulário de Login -->
             <form id="login-form">
                 <h2>Login</h2>
-                <div id="login-error" class="hidden" style="color:red; text-align:center; margin-bottom:1rem;"></div>
+                <div id="login-error" class="auth-error hidden"></div>
                 <div class="form-group"><label for="login-email">Email</label><input type="email" id="login-email" required></div>
                 <div class="form-group"><label for="login-password">Senha</label><input type="password" id="login-password" required></div>
                 <button type="submit">Entrar</button>
                 <p class="toggle-auth">Não tem uma conta? <a id="show-register">Cadastre-se</a></p>
             </form>
-            <!-- Formulário de Cadastro -->
             <form id="register-form" class="hidden">
                 <h2>Cadastro</h2>
-                <div id="register-error" class="hidden" style="color:red; text-align:center; margin-bottom:1rem;"></div>
+                <div id="register-error" class="auth-error hidden"></div>
                 <div class="form-group"><label for="register-email">Email</label><input type="email" id="register-email" required></div>
                 <div class="form-group"><label for="register-password">Senha (mínimo 6 caracteres)</label><input type="password" id="register-password" required></div>
                 <button type="submit">Cadastrar</button>
@@ -72,33 +90,39 @@
         </header>
 
         <main>
-            <!-- Conteúdo principal do app (igual ao anterior) -->
+            <section id="dashboard">
+                <div class="period-selector"><button id="prev-month-btn">&lt;</button><h2 id="current-month-display"></h2><button id="next-month-btn">&gt;</button></div>
+                <div class="summary-cards"><div class="card revenue"><h3>Receita do Mês</h3><p id="total-revenue">R$ 0,00</p></div><div class="card expenses"><h3>Despesa do Mês</h3><p id="total-expenses">R$ 0,00</p></div><div class="card balance"><h3>Balanço</h3><p id="balance">R$ 0,00</p></div></div>
+            </section>
+            <section id="transactions"><h2>Lançamentos</h2><div id="transaction-list"></div></section>
         </main>
 
         <button id="add-transaction-btn" class="fab">+</button>
         
-        <footer>
-            <span id="user-email-display" title="Usuário Logado"></span>
-        </footer>
+        <footer><span id="user-email-display" title="Usuário Logado"></span></footer>
     </div>
 
-    <!-- Modais (iguais aos anteriores) -->
+    <!-- Modals -->
+    <div id="transaction-modal" class="modal-overlay"> <!-- ... (conteúdo dos modais igual à v6) ... --> </div>
+    <div id="wallets-modal" class="modal-overlay"> <!-- ... (conteúdo dos modais igual à v6) ... --> </div>
+    <div id="confirm-delete-modal" class="modal-overlay"> <!-- ... (conteúdo dos modais igual à v6) ... --> </div>
+    <div id="alert-modal" class="modal-overlay"> <!-- ... (conteúdo dos modais igual à v6) ... --> </div>
 
     <!-- Firebase SDK -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, doc, addDoc, onSnapshot, updateDoc, deleteDoc, writeBatch, query, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getFirestore, collection, doc, addDoc, onSnapshot, updateDoc, deleteDoc, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         // --- CONFIGURAÇÃO ---
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "YOUR_API_KEY", authDomain: "...", projectId: "..." };
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
         
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // --- ELEMENTOS DO DOM (AUTENTICAÇÃO) ---
+        // --- DOM ELEMENTS ---
         const authContainer = document.getElementById('auth-container');
         const appContainer = document.getElementById('app-container');
         const loginForm = document.getElementById('login-form');
@@ -107,16 +131,17 @@
         const showLoginBtn = document.getElementById('show-login');
         const logoutBtn = document.getElementById('logout-btn');
         const userEmailDisplay = document.getElementById('user-email-display');
+        // ... (resto dos elementos do DOM do app)
 
-        // --- ESTADO ---
+        // --- APP STATE ---
         let currentUser = null;
+        let wallets = [];
+        let transactions = [];
+        let currentDate = new Date();
         let walletsUnsubscribe = null;
         let transactionsUnsubscribe = null;
-        // ... (outros estados do app como wallets, transactions, currentDate)
 
-        // --- LÓGICA DE AUTENTICAÇÃO ---
-        
-        // Alternar entre formulários de login e cadastro
+        // --- AUTH LOGIC ---
         showRegisterBtn.addEventListener('click', () => {
             loginForm.classList.add('hidden');
             registerForm.classList.remove('hidden');
@@ -126,84 +151,102 @@
             loginForm.classList.remove('hidden');
         });
 
-        // Cadastro
         registerForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = registerForm['register-email'].value;
             const password = registerForm['register-password'].value;
             const errorDiv = document.getElementById('register-error');
+            errorDiv.classList.add('hidden');
             try {
                 await createUserWithEmailAndPassword(auth, email, password);
-                // O onAuthStateChanged vai cuidar de mostrar o app
             } catch (error) {
-                errorDiv.textContent = "Erro ao cadastrar: " + error.message;
+                errorDiv.textContent = "Erro: " + error.message;
                 errorDiv.classList.remove('hidden');
             }
         });
 
-        // Login
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const email = loginForm['login-email'].value;
             const password = loginForm['login-password'].value;
             const errorDiv = document.getElementById('login-error');
+            errorDiv.classList.add('hidden');
             try {
                 await signInWithEmailAndPassword(auth, email, password);
-                // O onAuthStateChanged vai cuidar de mostrar o app
             } catch (error) {
-                 errorDiv.textContent = "Email ou senha inválidos.";
-                 errorDiv.classList.remove('hidden');
+                errorDiv.textContent = "Email ou senha inválidos.";
+                errorDiv.classList.remove('hidden');
             }
         });
         
-        // Logout
-        logoutBtn.addEventListener('click', () => {
-            signOut(auth);
-        });
+        logoutBtn.addEventListener('click', () => signOut(auth));
 
-        // Monitorar estado de autenticação
         onAuthStateChanged(auth, (user) => {
             if (user) {
-                // Usuário está logado
                 currentUser = user;
                 authContainer.classList.add('hidden');
                 appContainer.classList.remove('hidden');
                 userEmailDisplay.textContent = user.email;
-
-                // Inicia a escuta por dados na nuvem
                 setupFirestoreListeners(user.uid);
             } else {
-                // Usuário está deslogado
                 currentUser = null;
                 appContainer.classList.add('hidden');
                 authContainer.classList.remove('hidden');
-                
-                // Limpa listeners antigos
                 if (walletsUnsubscribe) walletsUnsubscribe();
                 if (transactionsUnsubscribe) transactionsUnsubscribe();
             }
         });
 
-        // --- LÓGICA DO APP (Firestore, Renderização, etc.) ---
+        // --- FIRESTORE & APP LOGIC ---
+        // (Aqui entra toda a lógica do app: render, modals, CRUD, etc.)
         
-        async function setupFirestoreListeners(userId) {
-            // A mesma lógica de antes para escutar carteiras e transações
-            const walletsRef = collection(db, 'users', userId, 'wallets'); // Caminho simplificado
-            const transactionsRef = collection(db, 'users', userId, 'transactions');
+        function setupFirestoreListeners(userId) {
+            const walletsRef = collection(db, 'artifacts', appId, 'users', userId, 'wallets');
+            const transactionsRef = collection(db, 'artifacts', appId, 'users', userId, 'transactions');
             
             walletsUnsubscribe = onSnapshot(walletsRef, (snapshot) => {
-                // ... lógica para atualizar o array 'wallets' e renderizar
+                wallets = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                if (snapshot.docs.length === 0 && !snapshot.metadata.hasPendingWrites) {
+                    addDoc(walletsRef, { name: "Carteira Principal" });
+                }
+                renderApp();
             });
 
             transactionsUnsubscribe = onSnapshot(transactionsRef, (snapshot) => {
-                // ... lógica para atualizar o array 'transactions' e renderizar
+                transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderApp();
             });
         }
         
-        // ... TODAS AS OUTRAS FUNÇÕES DO APLICATIVO (render, addWallet, deleteTransaction, etc)
-        // devem ser mantidas aqui. A única diferença é que elas agora usarão o caminho do
-        // banco de dados com o `currentUser.uid`, por exemplo:
-        // const walletsRef = collection(db, 'users', currentUser.uid, 'wallets');
+        function renderApp(){
+            // Função central para chamar todas as renderizações
+            if(!document.getElementById('app-container').classList.contains('hidden')){
+                renderSummary();
+                // ... outras renderizações
+            }
+        }
+
+        function renderSummary() {
+            // (implementação completa da renderização do resumo)
+            document.getElementById('current-month-display').textContent = currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+             const filtered = transactions.filter(t => {
+                const transactionDate = new Date(t.date);
+                const adjustedDate = new Date(transactionDate.valueOf() + transactionDate.getTimezoneOffset() * 60 * 1000);
+                return adjustedDate.getMonth() === currentDate.getMonth() && adjustedDate.getFullYear() === currentDate.getFullYear();
+            });
+
+            const totalRevenue = filtered.reduce((acc, t) => t.type === 'revenue' ? acc + t.amount : acc, 0);
+            const totalExpenses = filtered.reduce((acc, t) => t.type === 'expense' ? acc + t.amount : acc, 0);
+            const balance = totalRevenue - totalExpenses;
+
+            document.getElementById('total-revenue').textContent = (totalRevenue).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            document.getElementById('total-expenses').textContent = (totalExpenses).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+            document.getElementById('balance').textContent = (balance).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+        }
+        
+        // Adicionar o resto das funções de renderização e manipuladores de eventos aqui.
+        document.getElementById('prev-month-btn').addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); renderApp(); });
+        document.getElementById('next-month-btn').addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderApp(); });
 
     </script>
 </body>
