@@ -16,6 +16,7 @@
         #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255, 255, 255, 0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
         .loader { border: 8px solid #f3f3f3; border-radius: 50%; border-top: 8px solid var(--primary-color); width: 60px; height: 60px; animation: spin 1s linear infinite; }
         #loading-overlay p { margin-top: 1rem; font-weight: bold; color: var(--primary-dark); }
+        #retry-connection-btn { margin-top: 1rem; padding: 10px 20px; font-size: 1rem; font-weight: bold; color: white; background-color: var(--primary-color); border: none; border-radius: 5px; cursor: pointer; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         header { background: linear-gradient(90deg, var(--primary-color) 0%, var(--primary-dark) 100%); color: white; padding: 1rem 1.5rem; text-align: center; box-shadow: var(--shadow); position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; }
         header h1 { margin: 0; font-size: 1.5rem; flex-grow: 1; text-align: center; }
@@ -56,7 +57,8 @@
 
     <div id="loading-overlay">
         <div class="loader"></div>
-        <p>Conectando e sincronizando...</p>
+        <p id="loading-message">Conectando e sincronizando...</p>
+        <button id="retry-connection-btn" class="hidden">Recarregar</button>
     </div>
 
     <div id="app-container" class="hidden">
@@ -113,6 +115,8 @@
 
         // --- ELEMENTOS DO DOM ---
         const loadingOverlay = document.getElementById('loading-overlay');
+        const loadingMessage = document.getElementById('loading-message');
+        const retryBtn = document.getElementById('retry-connection-btn');
         const appContainer = document.getElementById('app-container');
         const userIdDisplay = document.getElementById('user-id-display');
         const walletsBtn = document.getElementById('wallets-btn');
@@ -218,18 +222,25 @@
 
         // --- AUTENTICAÇÃO ---
         onAuthStateChanged(auth, async (user) => {
-            loadingOverlay.classList.remove('hidden');
-            appContainer.classList.add('hidden');
+            // Limpa listeners antigos para evitar duplicação
             if (walletsUnsubscribe) walletsUnsubscribe();
             if (transactionsUnsubscribe) transactionsUnsubscribe();
 
             if (user) {
+                // Usuário está logado
+                loadingOverlay.classList.remove('hidden');
+                appContainer.classList.add('hidden');
+                
                 currentUser = user;
                 userIdDisplay.value = user.uid;
                 await setupFirestoreListeners(user.uid);
+                
                 loadingOverlay.classList.add('hidden');
                 appContainer.classList.remove('hidden');
             } else {
+                // Usuário deslogado, tenta logar
+                loadingOverlay.classList.remove('hidden');
+                appContainer.classList.add('hidden');
                 try {
                     if (typeof __initial_auth_token !== 'undefined') {
                         await signInWithCustomToken(auth, __initial_auth_token);
@@ -238,7 +249,9 @@
                     }
                 } catch (error) {
                     console.error("Erro no login:", error);
-                    loadingOverlay.querySelector('p').textContent = "Erro de conexão. Tente recarregar.";
+                    loadingOverlay.querySelector('.loader').classList.add('hidden');
+                    loadingMessage.textContent = "Erro de conexão.";
+                    retryBtn.classList.remove('hidden');
                 }
             }
         });
@@ -250,7 +263,8 @@
             
             walletsUnsubscribe = onSnapshot(walletsRef, (snapshot) => {
                 wallets = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                if (snapshot.docs.length === 0 && snapshot.metadata.hasPendingWrites === false) {
+                // Garante que uma carteira principal seja criada apenas uma vez.
+                if (snapshot.docs.length === 0 && !snapshot.metadata.hasPendingWrites) {
                     addDoc(walletsRef, { name: "Carteira Principal", createdAt: new Date() });
                 }
                 render();
@@ -318,6 +332,7 @@
         }
 
         // --- EVENT LISTENERS ---
+        retryBtn.addEventListener('click', () => location.reload());
         prevMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); render(); });
         nextMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); render(); });
         
