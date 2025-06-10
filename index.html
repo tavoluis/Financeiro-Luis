@@ -237,7 +237,7 @@
             Papa.parse(file, {
                 header: true,
                 skipEmptyLines: true,
-                delimiter: ";", // <- CORREÇÃO: Usa ponto e vírgula como delimitador
+                delimiter: ";",
                 complete: async (results) => {
                     try {
                         if (results.errors.length) {
