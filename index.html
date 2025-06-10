@@ -1,593 +1,404 @@
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gerenciador Financeiro Multi-Carteira com Importação</title>
-    
-    <!-- Tailwind CSS -->
-    <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- Chart.js para gráficos -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    
-    <!-- Papa Parse para ler arquivos CSV -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-
-    <!-- Fontes do Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
+    <title>Meu Controle Financeiro (Nuvem)</title>
     <style>
-        /* Estilos personalizados */
-        body {
-            font-family: 'Inter', sans-serif;
-            background-color: #0f172a; /* Azul-ardósia escuro */
-            color: #e2e8f0;
+        :root {
+            --primary-color: #007bff; --primary-dark: #0056b3; --secondary-color: #f4f7f9;
+            --text-color: #343a40; --revenue-color: #28a745; --expenses-color: #dc3545;
+            --balance-color: #17a2b8; --card-bg: #ffffff;
+            --shadow: 0 4px 12px rgba(0,0,0,0.08); --border-color: #e9ecef;
         }
-        .card {
-            background-color: #1e293b;
-            border: 1px solid #334155;
-            border-radius: 0.75rem;
-            padding: 1.5rem;
-        }
-        .form-input, .form-select {
-            background-color: #334155;
-            border: 1px solid #475569;
-            color: #e2e8f0;
-            border-radius: 0.5rem;
-        }
-        .form-input::placeholder { color: #94a3b8; }
-        .btn {
-            border-radius: 0.5rem;
-            font-weight: 600;
-            padding: 0.65rem 1.5rem;
-            transition: all 0.2s ease;
-            cursor: pointer;
-        }
-        .btn-primary { background-color: #3b82f6; color: white; }
-        .btn-primary:hover { background-color: #2563eb; }
-        .btn-primary:disabled { background-color: #334155; cursor: not-allowed; }
-        .btn-secondary { background-color: #64748b; color: white; }
-        .btn-secondary:hover { background-color: #475569; }
-        .btn-danger { background-color: #ef4444; color: white; }
-        .btn-danger:hover { background-color: #dc2626; }
-        .modal-backdrop {
-            background-color: rgba(0, 0, 0, 0.7);
-            backdrop-filter: blur(4px);
-        }
-        /* Scrollbar customizada */
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #1e293b; }
-        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #64748b; }
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: var(--secondary-color); color: var(--text-color); margin: 0; padding: 0; }
+        .hidden { display: none !important; }
+        
+        #auth-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 1rem; }
+        .auth-form-container { background-color: var(--card-bg); padding: 2rem; border-radius: 8px; box-shadow: var(--shadow); width: 100%; max-width: 400px; }
+        .auth-form-container h2 { text-align: center; color: var(--primary-dark); margin-top: 0; }
+        .form-group { margin-bottom: 1rem; }
+        .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; }
+        .form-group input { width: 100%; padding: 0.75rem; border-radius: 5px; border: 1px solid var(--border-color); box-sizing: border-box; }
+        button[type="submit"] { width: 100%; padding: 0.75rem; border: none; border-radius: 5px; background-color: var(--primary-color); color: white; font-size: 1rem; font-weight: bold; cursor: pointer; transition: background-color 0.2s; }
+        button[type="submit"]:hover { background-color: var(--primary-dark); }
+        .toggle-auth { text-align: center; margin-top: 1rem; font-size: 0.9rem; }
+        .toggle-auth a { color: var(--primary-color); cursor: pointer; text-decoration: underline; }
+        .auth-error { color: var(--expenses-color); text-align: center; margin-bottom: 1rem; font-weight: bold; min-height: 1.2em; }
+
+        #app-container { padding-bottom: 100px; }
+        header { background: linear-gradient(90deg, var(--primary-color) 0%, var(--primary-dark) 100%); color: white; padding: 1rem 1.5rem; box-shadow: var(--shadow); position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; }
+        header h1 { margin: 0; font-size: 1.5rem; flex-grow: 1; text-align: center; margin: 0 10px; }
+        .header-btn { background: none; border: none; color: white; font-size: 1.8rem; cursor: pointer; padding: 5px; }
+        footer { position: fixed; bottom: 0; left: 0; width: 100%; background-color: var(--border-color); padding: 5px; text-align: center; font-size: 0.8rem; color: #6c757d; z-index: 100; }
+        main { padding: 1rem; }
+        .fab { position: fixed; bottom: 45px; right: 25px; width: 60px; height: 60px; border-radius: 50%; background-color: var(--primary-color); color: white; font-size: 2.5rem; line-height: 56px; text-align: center; border: none; box-shadow: 0 6px 12px rgba(0,0,0,0.2); cursor: pointer; z-index: 1000; }
+        .period-selector { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+        .period-selector button { background: none; border: 2px solid var(--primary-color); border-radius: 50%; width: 40px; height: 40px; font-size: 1.5rem; font-weight: bold; cursor: pointer; color: var(--primary-color); }
+        .period-selector h2 { margin: 0; font-size: 1.2rem; color: var(--primary-color); font-weight: 600; text-transform: capitalize; }
+        .summary-cards { display: grid; grid-template-columns: 1fr; gap: 1rem; }
+        @media (min-width: 600px) { .summary-cards { grid-template-columns: repeat(3, 1fr); } }
+        .card { background-color: var(--card-bg); padding: 1.2rem; border-radius: 8px; box-shadow: var(--shadow); border-left: 5px solid; }
+        .card h3 { margin-top: 0; font-size: 1rem; color: #6c757d; }
+        .card p { margin: 0; font-size: 1.75rem; font-weight: bold; }
+        .card.revenue p { color: var(--revenue-color); } .card.revenue { border-color: var(--revenue-color); }
+        .card.expenses p { color: var(--expenses-color); } .card.expenses { border-color: var(--expenses-color); }
+        .card.balance p { color: var(--balance-color); } .card.balance { border-color: var(--balance-color); }
+        #transaction-list { margin-top: 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
+        .transaction-item { display: flex; align-items: center; background-color: var(--card-bg); padding: 1rem; border-radius: 8px; box-shadow: var(--shadow); border-left: 5px solid; }
+        .transaction-item .icon { font-size: 1.5rem; margin-right: 1rem; }
+        .transaction-item .details { flex-grow: 1; } .transaction-item .details p { margin: 0; }
+        .transaction-item .details .description { font-weight: 600; }
+        .transaction-item .details .meta { font-size: 0.8rem; color: #6c757d; margin-top: 4px; }
+        .transaction-item .amount { font-weight: bold; font-size: 1.1rem; margin-left: 1rem; }
+        .transaction-actions { display: flex; gap: 0.5rem; } .transaction-actions button { background: none; border: none; cursor: pointer; font-size: 1.2rem; color: #6c757d; }
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 2000; opacity: 0; visibility: hidden; transition: opacity 0.3s; }
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+        .modal-content { background-color: white; padding: 2rem; border-radius: 8px; width: 90%; max-width: 500px; box-shadow: 0 8px 16px rgba(0,0,0,0.2); max-height: 90vh; display: flex; flex-direction: column; }
+        .modal-body { overflow-y: auto; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color); }
+        .modal-actions button, .confirm-btn, .cancel-btn { padding: 0.75rem 1.5rem; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; }
+        .cancel-btn { background-color: #6c757d; color: white; }
+        .confirm-btn, .delete-confirm-btn { background-color: var(--primary-color); color: white; }
+        .delete-confirm-btn { background-color: var(--expenses-color); }
     </style>
 </head>
-<body class="antialiased">
+<body>
 
-    <div class="container mx-auto p-4 md:p-6 max-w-7xl">
-        <!-- Cabeçalho -->
-        <header class="mb-6 text-center">
-            <h1 class="text-4xl font-bold text-white mb-2">Gerenciador Multi-Carteira</h1>
-            <p id="loading" class="text-lg text-blue-400">Carregando dados...</p>
-            <div id="userInfo" class="mt-2 text-xs text-gray-500 hidden"></div>
+    <div id="auth-container">
+        <div class="auth-form-container">
+            <form id="login-form">
+                <h2>Login</h2>
+                <div id="login-error" class="auth-error hidden"></div>
+                <div class="form-group"><label for="login-email">Email</label><input type="email" id="login-email" required></div>
+                <div class="form-group"><label for="login-password">Senha</label><input type="password" id="login-password" required></div>
+                <button type="submit">Entrar</button>
+                <p class="toggle-auth">Não tem uma conta? <a id="show-register">Cadastre-se</a></p>
+            </form>
+            <form id="register-form" class="hidden">
+                <h2>Cadastro</h2>
+                <div id="register-error" class="auth-error hidden"></div>
+                <div class="form-group"><label for="register-email">Email</label><input type="email" id="register-email" required></div>
+                <div class="form-group"><label for="register-password">Senha (mínimo 6 caracteres)</label><input type="password" id="register-password" required></div>
+                <button type="submit">Cadastrar</button>
+                <p class="toggle-auth">Já tem uma conta? <a id="show-login">Faça Login</a></p>
+            </form>
+        </div>
+    </div>
+
+    <div id="app-container" class="hidden">
+        <header>
+            <button id="logout-btn" class="header-btn" title="Sair">🚪</button>
+            <h1>Meu Controle Financeiro</h1>
+            <button id="wallets-btn" class="header-btn" title="Gerenciar Carteiras">💼</button>
         </header>
 
-        <!-- Seção de Resumo -->
-        <section class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-            <div class="card"><h2 class="text-lg font-semibold text-gray-400">Receita do Mês</h2><p id="total-income" class="text-3xl font-bold text-green-400 mt-2">R$ 0,00</p></div>
-            <div class="card"><h2 class="text-lg font-semibold text-gray-400">Despesa do Mês</h2><p id="total-expense" class="text-3xl font-bold text-red-400 mt-2">R$ 0,00</p></div>
-            <div class="card"><h2 class="text-lg font-semibold text-gray-400">Saldo Total</h2><p id="total-balance" class="text-3xl font-bold text-blue-400 mt-2">R$ 0,00</p></div>
-        </section>
-
-        <main class="grid grid-cols-1 lg:grid-cols-5 gap-6">
-            <!-- Coluna da Esquerda: Carteiras e Ações -->
-            <div class="lg:col-span-2 space-y-6">
-                <!-- Card de Carteiras -->
-                <div class="card">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-xl font-bold">Minhas Carteiras</h3>
-                        <button id="add-wallet-btn" class="btn btn-primary text-sm py-2 px-3">Nova</button>
-                    </div>
-                    <div id="wallet-list" class="space-y-3 max-h-60 overflow-y-auto pr-2">
-                        <!-- Carteiras serão inseridas aqui -->
-                    </div>
-                </div>
-
-                <!-- Card de Ações Rápidas -->
-                <div class="card">
-                    <h3 class="text-xl font-bold mb-4">Ações</h3>
-                    <div class="space-y-3">
-                         <button id="add-transaction-btn" class="w-full btn btn-primary">Nova Transação</button>
-                         <button id="add-transfer-btn" class="w-full btn btn-secondary">Transferência</button>
-                         <button id="import-csv-btn" class="w-full btn btn-secondary bg-teal-600 hover:bg-teal-700">Importar CSV</button>
-                    </div>
-                </div>
-                
-                <!-- Card do Gráfico -->
-                <div class="card">
-                    <h3 class="text-xl font-bold mb-4">Despesas por Categoria</h3>
-                    <div class="relative h-64"><canvas id="expenseChart"></canvas></div>
-                </div>
-            </div>
-
-            <!-- Coluna da Direita: Histórico de Transações -->
-            <div class="lg:col-span-3 card">
-                <h3 class="text-xl font-bold mb-4">Histórico de Transações</h3>
-                <div id="transaction-list" class="space-y-3 max-h-[42rem] overflow-y-auto pr-2">
-                    <!-- Histórico será inserido aqui -->
-                </div>
-            </div>
+        <main>
+            <section id="dashboard">
+                <div class="period-selector"><button id="prev-month-btn">&lt;</button><h2 id="current-month-display"></h2><button id="next-month-btn">&gt;</button></div>
+                <div class="summary-cards"><div class="card revenue"><h3>Receita do Mês</h3><p id="total-revenue">R$ 0,00</p></div><div class="card expenses"><h3>Despesa do Mês</h3><p id="total-expenses">R$ 0,00</p></div><div class="card balance"><h3>Balanço</h3><p id="balance">R$ 0,00</p></div></div>
+            </section>
+            <section id="transactions"><h2>Lançamentos</h2><div id="transaction-list"></div></section>
         </main>
-    </div>
-    
-    <!-- Modais -->
-    <!-- ... (modais de transação, carteira, transferência e confirmação permanecem os mesmos) ... -->
-    <!-- Modal: Nova Transação -->
-    <div id="transaction-modal" class="fixed inset-0 z-50 items-center justify-center hidden">
-        <div class="modal-backdrop absolute inset-0"></div>
-        <div class="relative card w-full max-w-lg m-4">
-            <h3 class="text-xl font-bold mb-4">Adicionar Transação</h3>
-            <form id="transaction-form" class="space-y-4">
-                <input type="hidden" id="transactionId">
-                <div>
-                    <label for="tr-description" class="block text-sm font-medium">Descrição</label>
-                    <input type="text" id="tr-description" class="mt-1 block w-full form-input" required>
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label for="tr-amount" class="block text-sm font-medium">Valor (R$)</label>
-                        <input type="number" id="tr-amount" class="mt-1 block w-full form-input" step="0.01" required>
-                    </div>
-                    <div>
-                        <label for="tr-wallet" class="block text-sm font-medium">Carteira</label>
-                        <select id="tr-wallet" class="mt-1 block w-full form-select" required></select>
-                    </div>
-                </div>
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label for="tr-type" class="block text-sm font-medium">Tipo</label>
-                        <select id="tr-type" class="mt-1 block w-full form-select">
-                            <option value="expense">Despesa</option>
-                            <option value="income">Receita</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label for="tr-category" class="block text-sm font-medium">Categoria</label>
-                        <select id="tr-category" class="mt-1 block w-full form-select">
-                            <option>Moradia</option><option>Transporte</option><option>Alimentação</option>
-                            <option>Saúde</option><option>Lazer</option><option>Educação</option>
-                            <option>Salário</option><option>Investimentos</option><option>Outros</option>
-                        </select>
-                    </div>
-                </div>
-                <div id="recurring-options" class="space-y-3 pt-2 border-t border-gray-600">
-                     <div class="flex items-center">
-                        <input id="tr-is-recurring" type="checkbox" class="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 bg-gray-700">
-                        <label for="tr-is-recurring" class="ml-2 block text-sm">É recorrente ou parcelada?</label>
-                    </div>
-                    <div id="installments-field" class="hidden">
-                         <label for="tr-installments" class="block text-sm font-medium">Número de Parcelas (deixe 0 para despesa fixa mensal)</label>
-                         <input type="number" id="tr-installments" class="mt-1 block w-full form-input" value="0" min="0">
-                         <p class="text-xs text-gray-400 mt-1">Ex: 12 para parcelamento em 12x. 0 para uma conta mensal fixa (ex: aluguel).</p>
-                    </div>
-                </div>
-                <div class="flex justify-end gap-3 pt-4">
-                    <button type="button" class="btn-close-modal btn btn-secondary">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Salvar</button>
-                </div>
-            </form>
-        </div>
-    </div>
-    
-    <!-- Modal: Nova Carteira -->
-    <div id="wallet-modal" class="fixed inset-0 z-50 items-center justify-center hidden">
-        <div class="modal-backdrop absolute inset-0"></div>
-        <div class="relative card w-full max-w-md m-4">
-            <h3 class="text-xl font-bold mb-4">Nova Carteira</h3>
-            <form id="wallet-form" class="space-y-4">
-                <div>
-                    <label for="wallet-name" class="block text-sm font-medium">Nome da Carteira</label>
-                    <input type="text" id="wallet-name" class="mt-1 block w-full form-input" placeholder="Ex: Conta Corrente, Dinheiro" required>
-                </div>
-                <div>
-                    <label for="wallet-balance" class="block text-sm font-medium">Saldo Inicial (R$)</label>
-                    <input type="number" id="wallet-balance" class="mt-1 block w-full form-input" step="0.01" value="0.00" required>
-                </div>
-                <div class="flex justify-end gap-3 pt-4">
-                    <button type="button" class="btn-close-modal btn btn-secondary">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Criar</button>
-                </div>
-            </form>
-        </div>
+
+        <button id="add-transaction-btn" class="fab">+</button>
+        
+        <footer><span id="user-email-display" title="Usuário Logado"></span></footer>
     </div>
 
-    <!-- Modal: Transferência -->
-    <div id="transfer-modal" class="fixed inset-0 z-50 items-center justify-center hidden">
-        <div class="modal-backdrop absolute inset-0"></div>
-        <div class="relative card w-full max-w-lg m-4">
-            <h3 class="text-xl font-bold mb-4">Transferir Entre Carteiras</h3>
-            <form id="transfer-form" class="space-y-4">
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label for="transfer-from" class="block text-sm font-medium">Da Carteira</label>
-                        <select id="transfer-from" class="mt-1 block w-full form-select" required></select>
-                    </div>
-                    <div>
-                        <label for="transfer-to" class="block text-sm font-medium">Para a Carteira</label>
-                        <select id="transfer-to" class="mt-1 block w-full form-select" required></select>
-                    </div>
-                </div>
-                <div>
-                    <label for="transfer-amount" class="block text-sm font-medium">Valor (R$)</label>
-                    <input type="number" id="transfer-amount" class="mt-1 block w-full form-input" step="0.01" required>
-                </div>
-                <div class="flex justify-end gap-3 pt-4">
-                    <button type="button" class="btn-close-modal btn btn-secondary">Cancelar</button>
-                    <button type="submit" class="btn btn-primary">Transferir</button>
-                </div>
-            </form>
-        </div>
-    </div>
-    
-    <!-- Modal: Confirmação -->
-    <div id="confirm-modal" class="fixed inset-0 z-50 items-center justify-center hidden">
-        <div class="modal-backdrop absolute inset-0"></div>
-        <div class="relative card w-full max-w-sm m-4 text-center">
-            <h3 id="confirm-title" class="text-lg font-bold mb-2">Confirmar Ação</h3>
-            <p id="confirm-message" class="text-gray-300 mb-6">Você tem certeza?</p>
-            <div class="flex justify-center gap-4">
-                <button id="confirm-cancel-btn" class="btn btn-secondary">Cancelar</button>
-                <button id="confirm-ok-btn" class="btn btn-danger">Confirmar</button>
-            </div>
-        </div>
-    </div>
+    <!-- Modals -->
+    <div id="transaction-modal" class="modal-overlay"> <div class="modal-content"> <h2 id="modal-title">Novo Lançamento</h2> <div class="modal-body"> <form id="transaction-form"> <input type="hidden" id="transaction-id"> <div class="type-selector" style="display: flex; gap: 10px; margin-bottom: 1rem;"> <button type="button" id="type-revenue-btn" class="revenue" style="flex: 1; padding: 0.75rem;">Receita</button> <button type="button" id="type-expense-btn" class="expense" style="flex: 1; padding: 0.75rem;">Despesa</button> </div> <div class="form-group"> <label for="description">Descrição</label> <input type="text" id="description" required> </div> <div class="form-group"> <label for="amount">Valor</label> <input type="number" id="amount" step="0.01" min="0" required> </div> <div class="form-group"> <label for="date">Data</label> <input type="date" id="date" required> </div> <div class="form-group"> <label for="wallet">Carteira</label> <select id="wallet" required></select> </div> </form> </div> <div class="modal-actions"> <button type="button" class="cancel-btn">Cancelar</button> <button type="submit" form="transaction-form" class="confirm-btn">Salvar</button> </div> </div> </div>
+    <div id="wallets-modal" class="modal-overlay"> <div class="modal-content"> <h2>Gerenciar Carteiras</h2> <div class="modal-body"> <ul id="wallet-list"></ul> <form id="add-wallet-form" style="display: flex; gap: 10px; margin-top: 1rem;"> <input type="text" id="new-wallet-name" placeholder="Nome da nova carteira" required style="flex-grow:1;"> <button type="submit" class="confirm-btn">Adicionar</button> </form> </div> <div class="modal-actions"> <button type="button" class="cancel-btn">Fechar</button> </div> </div> </div>
+    <div id="confirm-delete-modal" class="modal-overlay"> <div class="modal-content" style="text-align: center;"> <h2>Confirmar Exclusão</h2> <p>Você tem certeza?</p> <div class="modal-actions"> <button type="button" class="cancel-btn">Cancelar</button> <button type="button" id="delete-confirm-btn" class="delete-confirm-btn">Excluir</button> </div> </div> </div>
+    <div id="alert-modal" class="modal-overlay"> <div class="modal-content" style="text-align: center;"> <h2>Aviso</h2> <p id="alert-message"></p> <div class="modal-actions"> <button type="button" class="cancel-btn confirm-btn">OK</button> </div> </div> </div>
 
-    <!-- Modal: Importar CSV -->
-    <div id="import-modal" class="fixed inset-0 z-50 items-center justify-center hidden">
-        <div class="modal-backdrop absolute inset-0"></div>
-        <div class="relative card w-full max-w-2xl m-4">
-            <h3 class="text-xl font-bold mb-4">Importar Dados do Excel (via CSV)</h3>
-            <div class="space-y-4">
-                <div class="p-4 bg-slate-800 rounded-lg">
-                    <h4 class="font-semibold text-lg mb-2">Instruções</h4>
-                    <ol class="list-decimal list-inside text-slate-300 space-y-1">
-                        <li>No seu Excel, abra a planilha de Receitas ou Despesas.</li>
-                        <li>Vá em "Arquivo" > "Salvar como" e escolha o formato **CSV (delimitado por vírgulas) (*.csv)**.</li>
-                        <li>Abaixo, selecione o tipo de arquivo (Receita ou Despesa) e depois clique para carregar.</li>
-                        <li>Confirme se as colunas são: `Data,Descrição,Categoria,Valor,Carteira,Já Pagou`.</li>
-                    </ol>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium mb-2">1. Tipo de Transação a Importar:</label>
-                    <div class="flex gap-4">
-                        <label class="flex items-center"><input type="radio" name="import-type" value="income" class="mr-2">Receita</label>
-                        <label class="flex items-center"><input type="radio" name="import-type" value="expense" class="mr-2" checked>Despesa</label>
-                    </div>
-                </div>
-                <div>
-                    <label for="csv-file-input" class="block text-sm font-medium mb-2">2. Selecione o arquivo .csv:</label>
-                    <input type="file" id="csv-file-input" accept=".csv" class="form-input w-full p-2">
-                </div>
-                <div id="import-progress" class="hidden space-y-2">
-                    <p id="import-status" class="text-blue-300"></p>
-                    <div class="w-full bg-slate-700 rounded-full h-2.5">
-                        <div id="import-progress-bar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
-                    </div>
-                </div>
-                <div class="flex justify-end gap-3 pt-4">
-                    <button type="button" class="btn-close-modal btn btn-secondary">Fechar</button>
-                    <button id="start-import-btn" class="btn btn-primary" disabled>Iniciar Importação</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Firebase -->
+    <!-- Firebase SDK -->
     <script type="module">
-        // Importações do Firebase SDK
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, collection, addDoc, onSnapshot, query, doc, deleteDoc, updateDoc, writeBatch, serverTimestamp, setLogLevel, getDocs, Timestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, addDoc, onSnapshot, updateDoc, deleteDoc, query } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // --- CONFIGURAÇÃO E INICIALIZAÇÃO ---
+        // --- CONFIG ---
         const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
-        // setLogLevel('debug');
 
-        // --- ESTADO GLOBAL DA APLICAÇÃO ---
-        let userId = null;
-        let wallets = [];
-        let transactions = [];
-        let chart = null;
-        let walletsCollectionRef, transactionsCollectionRef, recurringExpensesCollectionRef;
-        let unsubscribeWallets, unsubscribeTransactions;
-        let parsedCsvData = null;
-        
-        // --- ELEMENTOS DO DOM ---
-        const loadingEl = document.getElementById('loading');
-        const userInfoEl = document.getElementById('userInfo');
+        // --- DOM ELEMENTS ---
+        const authContainer = document.getElementById('auth-container');
+        const appContainer = document.getElementById('app-container');
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+        const showRegisterBtn = document.getElementById('show-register');
+        const showLoginBtn = document.getElementById('show-login');
+        const logoutBtn = document.getElementById('logout-btn');
+        const userEmailDisplay = document.getElementById('user-email-display');
+        const walletsBtn = document.getElementById('wallets-btn');
+        const addTransactionBtn = document.getElementById('add-transaction-btn');
+        const prevMonthBtn = document.getElementById('prev-month-btn');
+        const nextMonthBtn = document.getElementById('next-month-btn');
         const modals = {
             transaction: document.getElementById('transaction-modal'),
-            wallet: document.getElementById('wallet-modal'),
-            transfer: document.getElementById('transfer-modal'),
-            confirm: document.getElementById('confirm-modal'),
-            import: document.getElementById('import-modal'),
+            wallets: document.getElementById('wallets-modal'),
+            confirmDelete: document.getElementById('confirm-delete-modal'),
+            alert: document.getElementById('alert-modal')
         };
-        const importBtn = document.getElementById('start-import-btn');
-        const importProgress = document.getElementById('import-progress');
-        const importStatus = document.getElementById('import-status');
-        const importProgressBar = document.getElementById('import-progress-bar');
-        
-        // --- LÓGICA DE MODAIS ---
-        const openModal = (modal) => {
-            modal.classList.remove('hidden');
-            modal.classList.add('flex');
-        };
-        const closeModal = (modal) => {
-            modal.classList.add('hidden');
-            modal.classList.remove('flex');
-        };
-        document.querySelectorAll('.btn-close-modal').forEach(btn => btn.addEventListener('click', () => closeModal(btn.closest('.fixed'))));
-        document.getElementById('add-wallet-btn').addEventListener('click', () => openModal(modals.wallet));
-        document.getElementById('add-transaction-btn').addEventListener('click', () => {
-            document.getElementById('transaction-form').reset();
-            document.getElementById('recurring-options').style.display = 'block';
-            openModal(modals.transaction)
+        const transactionModalForm = document.getElementById('transaction-form');
+        const addWalletForm = document.getElementById('add-wallet-form');
+        const deleteConfirmBtn = document.getElementById('delete-confirm-btn');
+
+        // --- APP STATE ---
+        let currentUser = null;
+        let wallets = [];
+        let transactions = [];
+        let currentDate = new Date();
+        let itemToDelete = null;
+        let walletsUnsubscribe = null;
+        let transactionsUnsubscribe = null;
+
+        // --- AUTH LOGIC ---
+        showRegisterBtn.addEventListener('click', () => {
+            loginForm.classList.add('hidden');
+            registerForm.classList.remove('hidden');
         });
-        document.getElementById('add-transfer-btn').addEventListener('click', () => openModal(modals.transfer));
-        document.getElementById('import-csv-btn').addEventListener('click', () => {
-            parsedCsvData = null;
-            importBtn.disabled = true;
-            document.getElementById('csv-file-input').value = '';
-            importProgress.classList.add('hidden');
-            openModal(modals.import);
+        showLoginBtn.addEventListener('click', () => {
+            registerForm.classList.add('hidden');
+            loginForm.classList.remove('hidden');
         });
 
-        // --- LÓGICA DE CONFIRMAÇÃO ---
-        const showConfirm = (title, message) => new Promise(resolve => {
-            modals.confirm.querySelector('#confirm-title').textContent = title;
-            modals.confirm.querySelector('#confirm-message').textContent = message;
-            openModal(modals.confirm);
-            const okBtn = document.getElementById('confirm-ok-btn');
-            const cancelBtn = document.getElementById('confirm-cancel-btn');
-            const listener = e => {
-                closeModal(modals.confirm);
-                okBtn.removeEventListener('click', listener);
-                cancelBtn.removeEventListener('click', listener);
-                resolve(e.target === okBtn);
-            };
-            okBtn.addEventListener('click', listener);
-            cancelBtn.addEventListener('click', listener);
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = registerForm['register-email'].value;
+            const password = registerForm['register-password'].value;
+            const errorDiv = document.getElementById('register-error');
+            errorDiv.classList.add('hidden');
+            try {
+                await createUserWithEmailAndPassword(auth, email, password);
+            } catch (error) {
+                errorDiv.textContent = "Erro: Senha fraca ou email já em uso.";
+                errorDiv.classList.remove('hidden');
+            }
         });
 
-        // --- AUTENTICAÇÃO E INICIALIZAÇÃO ---
-        onAuthStateChanged(auth, user => {
-            if (user) {
-                userId = user.uid;
-                userInfoEl.textContent = `ID: ${userId}`;
-                userInfoEl.classList.remove('hidden');
-                setupFirestoreListeners();
-            } else {
-                loadingEl.textContent = 'Autenticando...';
-                const token = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
-                (token ? signInWithCustomToken(auth, token) : signInAnonymously(auth)).catch(error => {
-                    console.error("Authentication Error:", error);
-                    loadingEl.textContent = 'Falha na autenticação.';
-                });
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const email = loginForm['login-email'].value;
+            const password = loginForm['login-password'].value;
+            const errorDiv = document.getElementById('login-error');
+            errorDiv.classList.add('hidden');
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (error) {
+                errorDiv.textContent = "Email ou senha inválidos.";
+                errorDiv.classList.remove('hidden');
             }
         });
         
-        async function setupFirestoreListeners() {
-            walletsCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/wallets`);
-            transactionsCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/transactions`);
-            recurringExpensesCollectionRef = collection(db, `artifacts/${appId}/users/${userId}/recurring`);
-            if (unsubscribeWallets) unsubscribeWallets();
-            unsubscribeWallets = onSnapshot(query(walletsCollectionRef), snapshot => {
+        logoutBtn.addEventListener('click', () => signOut(auth));
+
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                currentUser = user;
+                authContainer.classList.add('hidden');
+                appContainer.classList.remove('hidden');
+                userEmailDisplay.textContent = user.email;
+                setupFirestoreListeners(user.uid);
+            } else {
+                currentUser = null;
+                appContainer.classList.add('hidden');
+                authContainer.classList.remove('hidden');
+                if (walletsUnsubscribe) walletsUnsubscribe();
+                if (transactionsUnsubscribe) transactionsUnsubscribe();
+            }
+        });
+
+        // --- FIRESTORE & APP ---
+        function getCollections() {
+            if (!currentUser) throw new Error("Usuário não autenticado");
+            return {
+                wallets: collection(db, 'artifacts', appId, 'users', currentUser.uid, 'wallets'),
+                transactions: collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions')
+            };
+        }
+
+        function setupFirestoreListeners(userId) {
+            const collections = getCollections();
+            walletsUnsubscribe = onSnapshot(collections.wallets, (snapshot) => {
                 wallets = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                wallets.sort((a, b) => a.name.localeCompare(b.name));
-                updateWalletUI();
-                updateSummary();
-            });
-            if (unsubscribeTransactions) unsubscribeTransactions();
-            unsubscribeTransactions = onSnapshot(query(transactionsCollectionRef), async snapshot => {
-                const currentTransactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                // Process recurring only if there are new recurring rules
-                if(snapshot.docChanges().some(change => change.type === 'added' && change.doc.data().recurringSourceId)) {
-                     await processRecurringExpenses();
+                if (snapshot.docs.length === 0 && !snapshot.metadata.hasPendingWrites) {
+                    addDoc(collections.wallets, { name: "Carteira Principal" });
                 }
-                transactions = currentTransactions;
-                updateSummary();
-                renderTransactionList();
-                updateChart();
-                loadingEl.style.display = 'none';
-            }, error => console.error("Transaction listener error: ", error));
-            await processRecurringExpenses(); // Process on initial load
+                renderApp();
+            });
+
+            transactionsUnsubscribe = onSnapshot(collections.transactions, (snapshot) => {
+                transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                renderApp();
+            });
         }
         
-        // --- LÓGICA DE IMPORTAÇÃO DE CSV ---
-        document.getElementById('csv-file-input').addEventListener('change', event => {
-            const file = event.target.files[0];
-            if (!file) return;
+        // --- RENDER ---
+        function renderApp(){
+            if(currentUser) {
+                renderSummary();
+                renderTransactionList();
+            }
+        }
 
-            importBtn.disabled = true;
-            Papa.parse(file, {
-                header: true,
-                skipEmptyLines: true,
-                complete: (results) => {
-                    parsedCsvData = results.data;
-                    importBtn.disabled = false;
-                    alert(`Arquivo lido. ${parsedCsvData.length} linhas encontradas. Pronto para importar.`);
-                },
-                error: (error) => {
-                    alert('Erro ao ler o arquivo CSV: ' + error.message);
-                    console.error("CSV Parse Error:", error);
-                }
+        const formatCurrency = (value) => (value || 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+        function renderSummary() {
+            document.getElementById('current-month-display').textContent = currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+            const filtered = transactions.filter(t => {
+                const transactionDate = new Date(t.date);
+                const adjustedDate = new Date(transactionDate.valueOf() + transactionDate.getTimezoneOffset() * 60 * 1000);
+                return adjustedDate.getMonth() === currentDate.getMonth() && adjustedDate.getFullYear() === currentDate.getFullYear();
             });
-        });
-        
-        importBtn.addEventListener('click', async () => {
-            if (!parsedCsvData || parsedCsvData.length === 0) {
-                alert("Nenhum dado para importar. Por favor, selecione um arquivo CSV válido.");
+            const totalRevenue = filtered.reduce((acc, t) => t.type === 'revenue' ? acc + t.amount : acc, 0);
+            const totalExpenses = filtered.reduce((acc, t) => t.type === 'expense' ? acc + t.amount : acc, 0);
+            const balance = totalRevenue - totalExpenses;
+            document.getElementById('total-revenue').textContent = formatCurrency(totalRevenue);
+            document.getElementById('total-expenses').textContent = formatCurrency(totalExpenses);
+            const balanceEl = document.getElementById('balance');
+            balanceEl.textContent = formatCurrency(balance);
+            balanceEl.style.color = balance < 0 ? 'var(--expenses-color)' : 'var(--balance-color)';
+        }
+
+        function renderTransactionList() {
+            const listEl = document.getElementById('transaction-list');
+            const filtered = transactions.filter(t => {
+                const transactionDate = new Date(t.date);
+                const adjustedDate = new Date(transactionDate.valueOf() + transactionDate.getTimezoneOffset() * 60 * 1000);
+                return adjustedDate.getMonth() === currentDate.getMonth() && adjustedDate.getFullYear() === currentDate.getFullYear();
+            }).sort((a,b) => new Date(b.date) - new Date(a.date));
+
+            if (filtered.length === 0) {
+                listEl.innerHTML = `<div style="text-align: center; color: #6c757d; padding: 2rem;">Nenhum lançamento para este mês.</div>`;
                 return;
             }
-            importBtn.disabled = true;
-            importProgress.classList.remove('hidden');
-            importStatus.textContent = 'Iniciando importação...';
-            importProgressBar.style.width = '0%';
+            listEl.innerHTML = filtered.map(t => {
+                const wallet = wallets.find(w => w.id === t.walletId);
+                return `<div class="transaction-item ${t.type}" data-id="${t.id}"><div class="icon">${t.type === 'revenue' ? '📈' : '📉'}</div><div class="details"><p class="description">${t.description}</p><div class="meta"><span>${new Date(t.date).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</span> • <span>${wallet ? wallet.name : ''}</span></div></div><div class="amount" style="color: ${t.type === 'revenue' ? 'var(--revenue-color)' : 'var(--expenses-color)'}">${t.type === 'revenue' ? '+' : '-'} ${formatCurrency(t.amount)}</div><div class="transaction-actions"><button class="edit-btn" title="Editar">✏️</button><button class="delete-btn" title="Excluir">🗑️</button></div></div>`;
+            }).join('');
+        }
+        
+        // --- MODAL & CRUD ---
+        const openModal = (modal) => modal.classList.add('active');
+        const closeModal = (modal) => modal.classList.remove('active');
+        const showAlert = (message) => { document.getElementById('alert-message').textContent = message; openModal(modals.alert); };
+        
+        prevMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); renderApp(); });
+        nextMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); renderApp(); });
+        
+        addTransactionBtn.addEventListener('click', () => {
+            transactionModalForm.reset();
+            transactionModalForm.elements['transaction-id'].value = '';
+            document.getElementById('modal-title').textContent = 'Novo Lançamento';
+            document.getElementById('date').value = new Date().toISOString().split('T')[0];
+            const walletSelect = document.getElementById('wallet');
+            walletSelect.innerHTML = wallets.map(w => `<option value="${w.id}">${w.name}</option>`).join('');
+            if(wallets.length === 0) { showAlert("Crie uma carteira primeiro!"); return; }
+            document.getElementById('type-expense-btn').classList.add('active');
+            document.getElementById('type-revenue-btn').classList.remove('active');
+            openModal(modals.transaction);
+        });
 
+        transactionModalForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = transactionModalForm.elements['transaction-id'].value;
+            const transactionData = {
+                description: transactionModalForm.elements['description'].value,
+                amount: parseFloat(transactionModalForm.elements['amount'].value),
+                date: transactionModalForm.elements['date'].value,
+                walletId: transactionModalForm.elements['wallet'].value,
+                type: transactionModalForm.querySelector('.type-selector button.active').id.includes('revenue') ? 'revenue' : 'expense'
+            };
             try {
-                const importType = document.querySelector('input[name="import-type"]:checked').value;
-                
-                // 1. Get or create wallets
-                importStatus.textContent = 'Verificando carteiras...';
-                const walletNamesInCsv = [...new Set(parsedCsvData.map(row => row.Carteira?.trim().toUpperCase()).filter(Boolean))];
-                const walletMap = await getOrCreateWallets(walletNamesInCsv);
-
-                // 2. Filter valid rows and prepare transactions
-                const transactionsToImport = parsedCsvData.filter(row => {
-                    const isPaid = row['Já Pagou']?.trim().toLowerCase() === 'sim';
-                    const hasRequiredFields = row.Data && row.Descrição && row.Valor && row.Carteira;
-                    return isPaid && hasRequiredFields;
-                });
-                
-                if (transactionsToImport.length === 0) {
-                    alert('Nenhuma transação válida encontrada para importar (verifique se a coluna "Já Pagou" está como "sim").');
-                    importProgress.classList.add('hidden');
-                    return;
+                if (id) {
+                    await updateDoc(doc(getCollections().transactions, id), transactionData);
+                } else {
+                    await addDoc(getCollections().transactions, transactionData);
                 }
-                
-                // 3. Import in batches
-                const BATCH_SIZE = 400; // Firestore batch limit is 500 writes
-                for (let i = 0; i < transactionsToImport.length; i += BATCH_SIZE) {
-                    const batch = writeBatch(db);
-                    const chunk = transactionsToImport.slice(i, i + BATCH_SIZE);
-                    
-                    chunk.forEach(row => {
-                        const newTransactionRef = doc(transactionsCollectionRef);
-                        const walletName = row.Carteira.trim().toUpperCase();
-                        const walletId = walletMap[walletName];
-
-                        const transactionData = {
-                            description: row.Descrição.trim(),
-                            amount: parseFloat(row.Valor.replace('R$', '').replace(/\./g, '').replace(',', '.').trim()),
-                            category: row.Categoria.trim(),
-                            type: importType,
-                            walletId: walletId,
-                            walletName: walletName,
-                            createdAt: parseDate(row.Data.trim()),
-                            imported: true
-                        };
-                        batch.set(newTransactionRef, transactionData);
-                    });
-
-                    await batch.commit();
-                    
-                    const progress = Math.round(((i + chunk.length) / transactionsToImport.length) * 100);
-                    importStatus.textContent = `Importando... ${i + chunk.length} de ${transactionsToImport.length} transações.`;
-                    importProgressBar.style.width = `${progress}%`;
-                }
-                
-                // 4. Recalculate all balances
-                importStatus.textContent = 'Importação concluída. Recalculando saldos das carteiras...';
-                await recalculateAllWalletBalances();
-
-                alert('Importação concluída com sucesso!');
-                closeModal(modals.import);
-
+                closeModal(modals.transaction);
             } catch (error) {
-                console.error("Erro na importação:", error);
-                alert("Ocorreu um erro grave durante a importação. Verifique o console para mais detalhes.");
-                importProgress.classList.add('hidden');
-            } finally {
-                importBtn.disabled = false;
+                showAlert('Erro ao salvar: ' + error.message);
             }
         });
 
-        async function getOrCreateWallets(walletNames) {
-            const walletMap = {};
-            wallets.forEach(w => { walletMap[w.name.toUpperCase()] = w.id; });
-            
-            const batch = writeBatch(db);
-            const newWalletsToCreate = [];
+        document.getElementById('transaction-list').addEventListener('click', (e) => {
+             const editBtn = e.target.closest('.edit-btn');
+             const deleteBtn = e.target.closest('.delete-btn');
+             if(!editBtn && !deleteBtn) return;
 
-            walletNames.forEach(name => {
-                if (!walletMap[name]) {
-                    const newWalletRef = doc(walletsCollectionRef);
-                    batch.set(newWalletRef, { name: name, balance: 0, initialBalance: 0, createdAt: serverTimestamp() });
-                    newWalletsToCreate.push({id: newWalletRef.id, name: name});
+             const id = e.target.closest('.transaction-item').dataset.id;
+             if(deleteBtn){
+                 itemToDelete = { type: 'transaction', id };
+                 openModal(modals.confirmDelete);
+             } else if(editBtn){
+                 const t = transactions.find(tr => tr.id === id);
+                 if(!t) return;
+                 transactionModalForm.reset();
+                 transactionModalForm.elements['transaction-id'].value = t.id;
+                 document.getElementById('modal-title').textContent = 'Editar Lançamento';
+                 const walletSelect = document.getElementById('wallet');
+                 walletSelect.innerHTML = wallets.map(w => `<option value="${w.id}" ${w.id == t.walletId ? 'selected' : ''}>${w.name}</option>`).join('');
+                 transactionModalForm.elements['description'].value = t.description;
+                 transactionModalForm.elements['amount'].value = t.amount;
+                 transactionModalForm.elements['date'].value = t.date;
+                 document.getElementById('type-expense-btn').classList.toggle('active', t.type === 'expense');
+                 document.getElementById('type-revenue-btn').classList.toggle('active', t.type === 'revenue');
+                 openModal(modals.transaction);
+             }
+        });
+        
+        deleteConfirmBtn.addEventListener('click', async () => {
+            if(!itemToDelete) return;
+            try {
+                if(itemToDelete.type === 'transaction') await deleteDoc(doc(getCollections().transactions, itemToDelete.id));
+                if(itemToDelete.type === 'wallet') {
+                    const isInUse = transactions.some(t => t.walletId === itemToDelete.id);
+                    if (isInUse) { showAlert("Não é possível excluir. A carteira está sendo usada."); }
+                    else { await deleteDoc(doc(getCollections().wallets, itemToDelete.id)); }
                 }
-            });
-            
-            if (newWalletsToCreate.length > 0) {
-                await batch.commit();
-                newWalletsToCreate.forEach(w => { walletMap[w.name] = w.id; });
+            } catch(error){
+                showAlert('Erro ao excluir: ' + error.message);
             }
-            return walletMap;
-        }
+            closeModal(modals.confirmDelete);
+            itemToDelete = null;
+        });
 
-        async function recalculateAllWalletBalances() {
-            const allTransactionsSnapshot = await getDocs(query(transactionsCollectionRef));
-            const allTransactions = allTransactionsSnapshot.docs.map(d => d.data());
-            
-            const balanceUpdates = {};
-            wallets.forEach(w => { balanceUpdates[w.id] = 0; });
-
-            allTransactions.forEach(t => {
-                if (t.walletId && balanceUpdates.hasOwnProperty(t.walletId)) {
-                    if (t.type === 'income') {
-                        balanceUpdates[t.walletId] += t.amount;
-                    } else if (t.type === 'expense') {
-                        balanceUpdates[t.walletId] -= t.amount;
-                    }
-                }
-            });
-
-            const batch = writeBatch(db);
-            wallets.forEach(wallet => {
-                const walletRef = doc(walletsCollectionRef, wallet.id);
-                batch.update(walletRef, { balance: balanceUpdates[wallet.id] || 0 });
-            });
-            await batch.commit();
-        }
-
-        function parseDate(dateString) {
-            // Assumes format DD/MM/YYYY
-            const parts = dateString.split('/');
-            if (parts.length === 3) {
-                const day = parseInt(parts[0], 10);
-                const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
-                const year = parseInt(parts[2], 10);
-                return Timestamp.fromDate(new Date(year, month, day));
+        // Wallets Modal
+        walletsBtn.addEventListener('click', () => {
+            const listEl = document.getElementById('wallet-list');
+            listEl.innerHTML = wallets.map(w => `<li><span>${w.name}</span><button class="delete-wallet-btn" data-id="${w.id}">🗑️</button></li>`).join('');
+            openModal(modals.wallets);
+        });
+        addWalletForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const input = document.getElementById('new-wallet-name');
+            const name = input.value.trim();
+            if (name) { try { await addDoc(getCollections().wallets, { name }); input.value = ''; } catch(e){ showAlert('Erro ao adicionar carteira.')} }
+        });
+        document.getElementById('wallet-list').addEventListener('click', (e) => {
+            if(e.target.classList.contains('delete-wallet-btn')){
+                itemToDelete = { type: 'wallet', id: e.target.dataset.id };
+                openModal(modals.confirmDelete);
             }
-            return Timestamp.now(); // Fallback
-        }
+        });
+        
+        // Generic close modal logic
+        Object.values(modals).forEach(modal => {
+            modal.addEventListener('click', e => { if (e.target === modal || e.target.classList.contains('cancel-btn')) closeModal(modal); });
+        });
+        transactionModalForm.querySelector('.type-selector').addEventListener('click', e => {
+            if(e.target.tagName === 'BUTTON'){
+                transactionModalForm.querySelector('.type-selector .active').classList.remove('active');
+                e.target.classList.add('active');
+            }
+        });
 
-        // --- FUNÇÕES DE CARTEIRA (o resto do código permanece o mesmo) ---
-        document.getElementById('wallet-form').addEventListener('submit', async e => { e.preventDefault(); const name = document.getElementById('wallet-name').value; const balance = parseFloat(document.getElementById('wallet-balance').value); try { await addDoc(walletsCollectionRef, { name, balance, initialBalance: balance, createdAt: serverTimestamp() }); e.target.reset(); closeModal(modals.wallet); } catch (error) { console.error("Erro ao criar carteira: ", error); } });
-        function updateWalletUI() { const walletListEl = document.getElementById('wallet-list'); const walletSelects = document.querySelectorAll('#tr-wallet, #transfer-from, #transfer-to'); walletListEl.innerHTML = ''; walletSelects.forEach(s => s.innerHTML = ''); if (wallets.length === 0) { walletListEl.innerHTML = '<p class="text-gray-400 text-center">Crie sua primeira carteira.</p>'; return; } wallets.forEach(w => { const walletDiv = document.createElement('div'); walletDiv.className = 'flex justify-between items-center bg-slate-700 p-3 rounded-md'; walletDiv.innerHTML = `<div><p class="font-semibold text-white">${w.name}</p><p class="text-sm text-gray-400">Saldo</p></div><p class="font-bold text-lg">${formatCurrency(w.balance)}</p>`; walletListEl.appendChild(walletDiv); const option = new Option(`${w.name} (${formatCurrency(w.balance)})`, w.id); walletSelects.forEach(s => s.add(option.cloneNode(true))); }); }
-
-        // --- LÓGICA DE TRANSAÇÕES E TRANSFERÊNCIAS (resto do código) ---
-        document.getElementById('transaction-form').addEventListener('submit', handleTransactionSubmit);
-        document.getElementById('transfer-form').addEventListener('submit', handleTransferSubmit);
-        document.getElementById('transaction-list').addEventListener('click', handleTransactionListClick);
-        async function handleTransactionSubmit(e) { e.preventDefault(); const form = e.target; const isRecurring = form['tr-is-recurring'].checked; if (isRecurring) { await saveRecurringExpense(form); } else { await saveSimpleTransaction(form); } form.reset(); closeModal(modals.transaction); }
-        async function saveSimpleTransaction(form) { const amount = parseFloat(form['tr-amount'].value); const type = form['tr-type'].value; const walletId = form['tr-wallet'].value; const wallet = wallets.find(w => w.id === walletId); const newBalance = type === 'income' ? wallet.balance + amount : wallet.balance - amount; const batch = writeBatch(db); const walletRef = doc(db, walletsCollectionRef.path, walletId); batch.update(walletRef, { balance: newBalance }); const transactionData = { description: form['tr-description'].value, amount, type, walletId, walletName: wallet.name, category: form['tr-category'].value, createdAt: serverTimestamp() }; const newTransactionRef = doc(collection(db, transactionsCollectionRef.path)); batch.set(newTransactionRef, transactionData); await batch.commit(); }
-        async function saveRecurringExpense(form) { const totalInstallments = parseInt(form['tr-installments'].value, 10); const expenseData = { description: form['tr-description'].value, amount: parseFloat(form['tr-amount'].value), category: form['tr-category'].value, walletId: form['tr-wallet'].value, isInstallment: totalInstallments > 0, totalInstallments: totalInstallments, currentInstallment: 0, dayOfMonth: new Date().getDate(), startDate: serverTimestamp(), lastProcessedDate: new Date(1970, 0, 1) }; await addDoc(recurringExpensesCollectionRef, expenseData); await processRecurringExpenses(true); }
-        async function handleTransferSubmit(e) { e.preventDefault(); const form = e.target; const fromId = form['transfer-from'].value; const toId = form['transfer-to'].value; const amount = parseFloat(form['transfer-amount'].value); if (fromId === toId || amount <= 0) return; const fromWallet = wallets.find(w => w.id === fromId); const toWallet = wallets.find(w => w.id === toId); const batch = writeBatch(db); const fromRef = doc(db, walletsCollectionRef.path, fromId); batch.update(fromRef, { balance: fromWallet.balance - amount }); const toRef = doc(db, walletsCollectionRef.path, toId); batch.update(toRef, { balance: toWallet.balance + amount }); const newTransactionRef = doc(collection(db, transactionsCollectionRef.path)); batch.set(newTransactionRef, { description: `Transferência de ${fromWallet.name} para ${toWallet.name}`, amount, type: 'transfer', fromWalletId: fromId, fromWalletName: fromWallet.name, toWalletId: toId, toWalletName: toWallet.name, createdAt: serverTimestamp() }); try { await batch.commit(); form.reset(); closeModal(modals.transfer); } catch(error) { console.error("Erro na transferência: ", error); } }
-        async function handleTransactionListClick(e) { const deleteButton = e.target.closest('.delete-btn'); if (deleteButton) { const transactionId = deleteButton.dataset.id; const transaction = transactions.find(t => t.id === transactionId); if (!transaction || transaction.type === 'transfer') return; const confirmed = await showConfirm('Excluir Transação', 'Esta ação irá estornar o valor da carteira. Deseja continuar?'); if (confirmed) { const wallet = wallets.find(w => w.id === transaction.walletId); const reverseAmount = transaction.type === 'income' ? -transaction.amount : transaction.amount; const newBalance = wallet.balance + reverseAmount; const batch = writeBatch(db); const walletRef = doc(db, walletsCollectionRef.path, wallet.id); batch.update(walletRef, { balance: newBalance }); const transactionRef = doc(db, transactionsCollectionRef.path, transactionId); batch.delete(transactionRef); try { await batch.commit(); } catch(error) { console.error("Erro ao excluir transação: ", error); } } } }
-        async function processRecurringExpenses(force = false) { const now = new Date(); const querySnapshot = await getDocs(query(recurringExpensesCollectionRef)); if(querySnapshot.empty) return; const batch = writeBatch(db); for (const docSnap of querySnapshot.docs) { const expense = { id: docSnap.id, ...docSnap.data() }; const lastProcessed = expense.lastProcessedDate.toDate(); const hasBeenProcessedThisMonth = lastProcessed.getMonth() === now.getMonth() && lastProcessed.getFullYear() === now.getFullYear(); if ((!force && hasBeenProcessedThisMonth) || (expense.isInstallment && expense.currentInstallment >= expense.totalInstallments)) continue; const wallet = wallets.find(w => w.id === expense.walletId); if (!wallet) continue; let description = expense.description; if(expense.isInstallment) description += ` (${expense.currentInstallment + 1}/${expense.totalInstallments})`; const transactionData = { description, amount: expense.amount, type: 'expense', category: expense.category, walletId: expense.walletId, walletName: wallet.name, createdAt: serverTimestamp(), recurringSourceId: expense.id, }; const newTransactionRef = doc(collection(db, transactionsCollectionRef.path)); batch.set(newTransactionRef, transactionData); const newBalance = wallet.balance - expense.amount; const walletRef = doc(db, walletsCollectionRef.path, wallet.id); batch.update(walletRef, { balance: newBalance }); const updatedExpense = { lastProcessedDate: now, currentInstallment: expense.currentInstallment + 1 }; const expenseRef = doc(db, recurringExpensesCollectionRef.path, expense.id); batch.update(expenseRef, updatedExpense); } try { await batch.commit(); } catch (error) { if (error.code !== 'invalid-argument') console.error("Erro ao processar recorrentes:", error); } }
-        function updateSummary() { const totalBalance = wallets.reduce((acc, w) => acc + w.balance, 0); const now = new Date(); const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1); const monthlyTransactions = transactions.filter(t => t.createdAt && t.createdAt.toDate() >= firstDayOfMonth); const totalIncome = monthlyTransactions.filter(t => t.type === 'income').reduce((acc, t) => acc + t.amount, 0); const totalExpense = monthlyTransactions.filter(t => t.type === 'expense').reduce((acc, t) => acc + t.amount, 0); document.getElementById('total-balance').textContent = formatCurrency(totalBalance); document.getElementById('total-income').textContent = formatCurrency(totalIncome); document.getElementById('total-expense').textContent = formatCurrency(totalExpense); }
-        function renderTransactionList() { const listEl = document.getElementById('transaction-list'); listEl.innerHTML = ''; transactions.sort((a,b) => b.createdAt.toMillis() - a.createdAt.toMillis()); if(transactions.length === 0) { listEl.innerHTML = '<p class="text-gray-400 text-center">Nenhuma transação registrada.</p>'; return; } transactions.forEach(t => { const item = document.createElement('div'); item.className = 'flex justify-between items-center p-3 rounded-lg hover:bg-slate-700/50'; let icon, sign, textColor; if(t.type === 'income') { icon = `<svg class="h-6 w-6 text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" /></svg>`; textColor = 'text-green-400'; sign = '+'; } else if (t.type === 'expense') { icon = `<svg class="h-6 w-6 text-red-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 12H6" /></svg>`; textColor = 'text-red-400'; sign = '-'; } else { icon = `<svg class="h-6 w-6 text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" /></svg>`; textColor = 'text-blue-400'; sign = ''; } const date = t.createdAt ? t.createdAt.toDate().toLocaleDateString('pt-BR') : '...'; const walletName = t.type === 'transfer' ? '' : ` • <span class="text-gray-400">${t.walletName}</span>`; item.innerHTML = `<div class="flex items-center gap-4"><div class="p-2 rounded-full bg-slate-800">${icon}</div><div><p class="font-semibold text-white">${t.description}</p><p class="text-sm text-gray-400">${t.category || 'Transferência'} • ${date}${walletName}</p></div></div><div class="text-right flex items-center gap-4"><span class="font-bold text-lg ${textColor}">${sign} ${formatCurrency(t.amount)}</span>${t.type !== 'transfer' ? `<button data-id="${t.id}" class="delete-btn text-gray-500 hover:text-red-500"><svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg></button>` : `<div class="w-5"></div>`}</div>`; listEl.appendChild(item); }); }
-        document.getElementById('tr-is-recurring').addEventListener('change', e => { document.getElementById('installments-field').style.display = e.target.checked ? 'block' : 'none'; });
-        function initializeChart() { const ctx = document.getElementById('expenseChart').getContext('2d'); chart = new Chart(ctx, { type: 'doughnut', options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } } }); }
-        function updateChart() { const expenseData = transactions.filter(t => t.type === 'expense').reduce((acc, t) => { acc[t.category] = (acc[t.category] || 0) + t.amount; return acc; }, {}); chart.data = { labels: Object.keys(expenseData), datasets: [{ data: Object.values(expenseData), backgroundColor: ['#ef4444', '#f97316', '#f59e0b', '#eab308', '#84cc16', '#22c55e', '#10b981', '#14b8a6'], borderColor: '#1e293b', borderWidth: 3, }] }; chart.update(); }
-        const formatCurrency = (amount) => (amount != null ? amount : 0).toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-        initializeChart();
     </script>
 </body>
 </html>
