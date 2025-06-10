@@ -71,7 +71,9 @@
         #wallets-modal #wallet-list { list-style: none; padding: 0; margin: 0; }
         #wallets-modal #wallet-list li { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; border-bottom: 1px solid var(--border-color); }
         #wallets-modal #wallet-list li:last-child { border-bottom: none; }
-        #wallets-modal .delete-wallet-btn { background: none; border: none; color: var(--expenses-color); font-size: 1.2rem; cursor: pointer; }
+        #wallets-modal .wallet-info { flex-grow: 1; }
+        #wallets-modal .wallet-balance { font-size: 0.9rem; font-weight: bold; }
+        #wallets-modal .delete-wallet-btn { background: none; border: none; color: var(--expenses-color); font-size: 1.2rem; cursor: pointer; flex-shrink: 0; margin-left: 1rem; }
         #add-wallet-form { display: flex; gap: 10px; margin-top: 1rem; }
         #add-wallet-form input { flex-grow: 1; }
         #add-wallet-form button { white-space: nowrap; }
@@ -161,8 +163,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const alertMessageEl = document.getElementById('alert-message');
 
     // --- ESTADO DA APLICAÇÃO ---
-    let transactions = JSON.parse(localStorage.getItem('transactions_v3')) || [];
-    let wallets = JSON.parse(localStorage.getItem('wallets_v3')) || [];
+    let transactions = JSON.parse(localStorage.getItem('transactions_v4')) || [];
+    let wallets = JSON.parse(localStorage.getItem('wallets_v4')) || [];
     let currentDate = new Date();
     let selectedType = 'expense';
     let itemToDelete = { id: null, type: null };
@@ -178,8 +180,8 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     const saveToLocalStorage = () => {
-        localStorage.setItem('transactions_v3', JSON.stringify(transactions));
-        localStorage.setItem('wallets_v3', JSON.stringify(wallets));
+        localStorage.setItem('transactions_v4', JSON.stringify(transactions));
+        localStorage.setItem('wallets_v4', JSON.stringify(wallets));
     };
 
     const populateWalletSelect = () => {
@@ -303,12 +305,26 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    const calculateWalletBalance = (walletId) => {
+        return transactions.reduce((acc, t) => {
+            if (t.walletId === walletId) {
+                return acc + (t.type === 'revenue' ? t.amount : -t.amount);
+            }
+            return acc;
+        }, 0);
+    };
+
     const renderWallets = () => {
         walletListEl.innerHTML = '';
         wallets.forEach(w => {
+            const balance = calculateWalletBalance(w.id);
+            const balanceColor = balance < 0 ? 'var(--expenses-color)' : 'var(--revenue-color)';
             const li = document.createElement('li');
             li.innerHTML = `
-                <span>${w.name}</span>
+                <div class="wallet-info">
+                    <span>${w.name}</span>
+                    <span class="wallet-balance" style="color: ${balanceColor};">${formatCurrency(balance)}</span>
+                </div>
                 <button class="delete-wallet-btn" data-id="${w.id}" title="Excluir Carteira">🗑️</button>`;
             walletListEl.appendChild(li);
         });
@@ -328,8 +344,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const handleWalletListClick = (e) => {
         if (e.target.classList.contains('delete-wallet-btn')) {
             const id = parseInt(e.target.dataset.id);
-            const isWalletInUse = transactions.some(t => t.walletId === id);
-            if(isWalletInUse) {
+            if(transactions.some(t => t.walletId === id)) {
                 showAlert("Não é possível excluir esta carteira, pois ela está sendo usada em um ou mais lançamentos.");
                 return;
             }
@@ -371,19 +386,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- INICIALIZAÇÃO ---
     function initialize() {
+        // Migra dados de versões antigas se necessário
+        if(localStorage.getItem('transactions_v3') && !localStorage.getItem('transactions_v4')){
+            transactions = JSON.parse(localStorage.getItem('transactions_v3')) || [];
+            wallets = JSON.parse(localStorage.getItem('wallets_v3')) || [];
+            localStorage.removeItem('transactions_v3');
+            localStorage.removeItem('wallets_v3');
+        }
+
         if (wallets.length === 0) {
             wallets.push({ id: Date.now(), name: "Carteira Principal" });
-            saveToLocalStorage();
         }
-        // Migração de dados de lançamentos antigos sem carteira
         let needsSave = false;
         transactions.forEach(t => {
             if(typeof t.walletId === 'undefined') {
-                t.walletId = wallets[0].id; // Associa à primeira carteira
+                t.walletId = wallets[0].id;
                 needsSave = true;
             }
         });
         if(needsSave) saveToLocalStorage();
+        
         render();
     }
     initialize();
