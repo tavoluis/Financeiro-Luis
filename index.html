@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meu Controle Financeiro</title>
+    <title>Meu Controle Financeiro (Nuvem)</title>
     <style>
         :root {
             --primary-color: #007bff; --primary-dark: #0056b3; --secondary-color: #f4f7f9;
@@ -12,9 +12,16 @@
             --shadow: 0 4px 12px rgba(0,0,0,0.08); --border-color: #e9ecef;
         }
         body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; background-color: var(--secondary-color); color: var(--text-color); margin: 0; padding-bottom: 100px; }
+        .hidden { display: none !important; }
+        #loading-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(255, 255, 255, 0.9); display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
+        .loader { border: 8px solid #f3f3f3; border-radius: 50%; border-top: 8px solid var(--primary-color); width: 60px; height: 60px; animation: spin 1s linear infinite; }
+        #loading-overlay p { margin-top: 1rem; font-weight: bold; color: var(--primary-dark); }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         header { background: linear-gradient(90deg, var(--primary-color) 0%, var(--primary-dark) 100%); color: white; padding: 1rem 1.5rem; text-align: center; box-shadow: var(--shadow); position: sticky; top: 0; z-index: 100; display: flex; justify-content: space-between; align-items: center; }
-        header h1 { margin: 0; font-size: 1.5rem; flex-grow: 1; text-align: center; margin-left: 40px; }
+        header h1 { margin: 0; font-size: 1.5rem; flex-grow: 1; text-align: center; }
         header #wallets-btn { background: none; border: none; color: white; font-size: 1.8rem; cursor: pointer; width: 40px; }
+        footer { position: fixed; bottom: 0; left: 0; width: 100%; background-color: var(--border-color); padding: 5px; text-align: center; font-size: 0.7rem; color: #6c757d; z-index: 100; }
+        footer input { width: 90%; max-width: 400px; border: none; background: transparent; text-align: center; cursor: pointer; }
         main { padding: 1rem; }
         .period-selector { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
         .period-selector button { background: none; border: 2px solid var(--primary-color); border-radius: 50%; width: 40px; height: 40px; font-size: 1.5rem; font-weight: bold; cursor: pointer; color: var(--primary-color); transition: all 0.2s; }
@@ -28,334 +35,375 @@
         .card.revenue { border-color: var(--revenue-color); } .card.revenue p { color: var(--revenue-color); }
         .card.expenses { border-color: var(--expenses-color); } .card.expenses p { color: var(--expenses-color); }
         .card.balance { border-color: var(--balance-color); } .card.balance p { color: var(--balance-color); }
-        #transactions h2 { border-bottom: 2px solid var(--border-color); padding-bottom: 0.5rem; font-size: 1.2rem; }
         #transaction-list { margin-top: 1rem; display: flex; flex-direction: column; gap: 0.75rem; }
         .transaction-item { display: flex; align-items: center; background-color: var(--card-bg); padding: 1rem; border-radius: 8px; box-shadow: var(--shadow); border-left: 5px solid; transition: box-shadow 0.2s; }
-        .transaction-item:hover { box-shadow: 0 6px 16px rgba(0,0,0,0.12); }
         .transaction-item.revenue { border-color: var(--revenue-color); } .transaction-item.expense { border-color: var(--expenses-color); }
         .transaction-item .icon { font-size: 1.5rem; margin-right: 1rem; }
         .transaction-item .details { flex-grow: 1; } .transaction-item .details p { margin: 0; }
         .transaction-item .details .description { font-weight: 600; }
         .transaction-item .details .meta { font-size: 0.8rem; color: #6c757d; display: flex; align-items: center; flex-wrap: wrap; gap: 5px; margin-top: 4px; }
-        .transaction-item .details .meta .installment { background-color: #eee; padding: 2px 6px; border-radius: 4px; }
-        .transaction-item .details .meta .recurring { font-size: 1rem; }
-        .transaction-item .details .meta .invoice a { text-decoration: none; font-size: 1rem; }
         .transaction-item .amount { font-weight: bold; font-size: 1.1rem; margin-left: 1rem; text-align: right; }
-        .transaction-actions { display: flex; gap: 0.5rem; } .transaction-actions button { background: none; border: none; cursor: pointer; font-size: 1.2rem; padding: 0.3rem; color: #6c757d; transition: all 0.2s; }
-        .transaction-actions button:hover { transform: scale(1.2); } .transaction-actions .edit-btn:hover { color: var(--primary-color); } .transaction-actions .delete-btn:hover { color: var(--expenses-color); }
-        #transaction-list .empty-state { color: #6c757d; text-align: center; padding: 2rem; background-color: var(--card-bg); border-radius: 8px; }
-        .fab { position: fixed; bottom: 25px; right: 25px; width: 60px; height: 60px; border-radius: 50%; background-color: var(--primary-color); color: white; font-size: 2.5rem; line-height: 56px; text-align: center; border: none; box-shadow: 0 6px 12px rgba(0,0,0,0.2); cursor: pointer; z-index: 1000; transition: all 0.2s; }
-        .fab:hover { transform: scale(1.1); background-color: var(--primary-dark); }
+        .transaction-actions { display: flex; gap: 0.5rem; } .transaction-actions button { background: none; border: none; cursor: pointer; font-size: 1.2rem; padding: 0.3rem; color: #6c757d; }
+        .fab { position: fixed; bottom: 45px; right: 25px; width: 60px; height: 60px; border-radius: 50%; background-color: var(--primary-color); color: white; font-size: 2.5rem; line-height: 56px; text-align: center; border: none; box-shadow: 0 6px 12px rgba(0,0,0,0.2); cursor: pointer; z-index: 1000; }
         .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 2000; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0s 0.3s; }
         .modal-overlay.active { opacity: 1; visibility: visible; transition: opacity 0.3s; }
         .modal-content { background-color: white; padding: 2rem; border-radius: 8px; width: 90%; max-width: 500px; box-shadow: 0 8px 16px rgba(0,0,0,0.2); transform: scale(0.9); transition: transform 0.3s; max-height: 90vh; display: flex; flex-direction: column; }
-        .modal-overlay.active .modal-content { transform: scale(1); }
-        .modal-content h2 { margin-top: 0; } .modal-body { overflow-y: auto; padding-right: 10px; margin-right: -10px; }
-        .form-group { margin-bottom: 1rem; } .form-group label { display: block; margin-bottom: 0.5rem; font-weight: 600; }
-        .form-group input, .form-group select { width: 100%; padding: 0.75rem; border-radius: 5px; border: 1px solid var(--border-color); box-sizing: border-box; }
-        .form-group.checkbox-group { display: flex; align-items: center; gap: 10px; }
-        .type-selector { display: flex; gap: 10px; margin-bottom: 1rem; }
-        .type-selector button { flex: 1; padding: 0.75rem; border-radius: 5px; border: 2px solid var(--border-color); background-color: var(--secondary-color); font-weight: bold; cursor: pointer; transition: all 0.2s; }
-        .type-selector button.active.revenue { background-color: var(--revenue-color); border-color: var(--revenue-color); color: white; }
-        .type-selector button.active.expense { background-color: var(--expenses-color); border-color: var(--expenses-color); color: white; }
+        .modal-body { overflow-y: auto; }
         .modal-actions { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem; padding-top: 1rem; border-top: 1px solid var(--border-color); }
-        .modal-actions button { padding: 0.75rem 1.5rem; border-radius: 5px; border: none; font-weight: bold; cursor: pointer; transition: opacity 0.2s; }
-        .modal-actions button:hover { opacity: 0.8; }
-        .modal-actions .cancel-btn { background-color: #6c757d; color: white; }
-        .modal-actions .confirm-btn { background-color: var(--primary-color); color: white; }
-        .modal-actions .delete-confirm-btn { background-color: var(--expenses-color); color: white; }
-        #confirm-delete-modal .modal-content, #alert-modal .modal-content, #confirm-delete-series-modal .modal-content { max-width: 400px; text-align: center; }
-        #wallets-modal #wallet-list { list-style: none; padding: 0; margin: 0; }
-        #wallets-modal #wallet-list li { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; border-bottom: 1px solid var(--border-color); }
-        #wallets-modal #wallet-list li:last-child { border-bottom: none; }
-        #wallets-modal .wallet-info { flex-grow: 1; }
-        #wallets-modal .wallet-balance { font-size: 0.9rem; font-weight: bold; }
-        #wallets-modal .delete-wallet-btn { background: none; border: none; color: var(--expenses-color); font-size: 1.2rem; cursor: pointer; flex-shrink: 0; margin-left: 1rem; }
-        #add-wallet-form { display: flex; gap: 10px; margin-top: 1rem; }
-        #add-wallet-form input { flex-grow: 1; }
-        #add-wallet-form button { white-space: nowrap; }
-        #advanced-options { border-top: 1px dashed #ccc; margin-top: 1rem; padding-top: 1rem; }
     </style>
 </head>
 <body>
-    <header><h1>Meu Controle Financeiro</h1><button id="wallets-btn" title="Gerenciar Carteiras">💼</button></header>
-    <main>
-        <section id="dashboard"><div class="period-selector"><button id="prev-month-btn">&lt;</button><h2 id="current-month-display"></h2><button id="next-month-btn">&gt;</button></div><div class="summary-cards"><div class="card revenue"><h3>Receita do Mês</h3><p id="total-revenue">R$ 0,00</p></div><div class="card expenses"><h3>Despesa do Mês</h3><p id="total-expenses">R$ 0,00</p></div><div class="card balance"><h3>Balanço</h3><p id="balance">R$ 0,00</p></div></div></section>
-        <section id="transactions"><h2>Lançamentos</h2><div id="transaction-list"></div></section>
-    </main>
-    <button id="add-transaction-btn" class="fab">+</button>
-    <div id="transaction-modal" class="modal-overlay">
-        <div class="modal-content"><h2 id="modal-title">Novo Lançamento</h2><div class="modal-body"><form id="transaction-form"><input type="hidden" id="transaction-id"><div class="type-selector"><button type="button" id="type-revenue-btn" class="revenue">Receita</button><button type="button" id="type-expense-btn" class="expense">Despesa</button></div><div class="form-group"><label for="description">Descrição</label><input type="text" id="description" required></div><div class="form-group"><label for="amount">Valor</label><input type="number" id="amount" step="0.01" min="0" required></div><div class="form-group"><label for="date">Data</label><input type="date" id="date" required></div><div class="form-group"><label for="wallet">Carteira</label><select id="wallet" required></select></div><div class="form-group"><label for="invoice">Nota Fiscal (URL ou N°)</label><input type="text" id="invoice" placeholder="https://exemplo.com/nota.pdf ou 12345"></div><div id="advanced-options"><div class="form-group checkbox-group"><input type="checkbox" id="is-recurring"><label for="is-recurring">Despesa Fixa (repete todo mês)</label></div><div class="form-group"><label for="installments">Nº de Parcelas</label><input type="number" id="installments" min="1" placeholder="Ex: 3"></div></div></form></div><div class="modal-actions"><button type="button" class="cancel-btn">Cancelar</button><button type="submit" form="transaction-form" class="confirm-btn">Salvar</button></div></div>
+
+    <div id="loading-overlay">
+        <div class="loader"></div>
+        <p>Conectando e sincronizando...</p>
     </div>
-    <div id="wallets-modal" class="modal-overlay"><div class="modal-content"><h2>Gerenciar Carteiras</h2><div class="modal-body"><ul id="wallet-list"></ul><form id="add-wallet-form"><div class="form-group" style="flex-grow:1; margin:0;"><input type="text" id="new-wallet-name" placeholder="Nome da nova carteira" required></div><button type="submit" class="confirm-btn">Adicionar</button></form></div><div class="modal-actions"><button type="button" class="cancel-btn">Fechar</button></div></div></div>
-    <div id="confirm-delete-modal" class="modal-overlay"><div class="modal-content"><h2>Confirmar Exclusão</h2><p>Você tem certeza?</p><div class="modal-actions"><button type="button" class="cancel-btn">Cancelar</button><button type="button" id="delete-confirm-btn" class="delete-confirm-btn">Excluir</button></div></div></div>
-    <div id="confirm-delete-series-modal" class="modal-overlay"><div class="modal-content"><h2>Apagar Lançamento Parcelado</h2><p>Este lançamento faz parte de uma série. O que você deseja apagar?</p><div class="modal-actions" style="flex-direction: column; gap: 0.5rem;"><button type="button" id="delete-series-btn">Apagar Todas as Parcelas</button><button type="button" id="delete-one-btn">Apagar Apenas Esta</button><button type="button" class="cancel-btn">Cancelar</button></div></div></div>
-    <div id="alert-modal" class="modal-overlay"><div class="modal-content"><h2>Aviso</h2><p id="alert-message"></p><div class="modal-actions"><button type="button" class="cancel-btn confirm-btn">OK</button></div></div></div>
 
-<script>
-document.addEventListener('DOMContentLoaded', () => {
-    // --- ELEMENTOS DO DOM ---
-    const modals = {
-        transaction: document.getElementById('transaction-modal'), wallets: document.getElementById('wallets-modal'),
-        confirmDelete: document.getElementById('confirm-delete-modal'), alert: document.getElementById('alert-modal'),
-        confirmDeleteSeries: document.getElementById('confirm-delete-series-modal'),
-    };
-    const transactionForm = document.getElementById('transaction-form');
-    // ... (restante dos seletores de elementos)
-    const totalRevenueEl = document.getElementById('total-revenue'), totalExpensesEl = document.getElementById('total-expenses'), balanceEl = document.getElementById('balance');
-    const currentMonthDisplay = document.getElementById('current-month-display'), transactionList = document.getElementById('transaction-list');
-    const descriptionInput = document.getElementById('description'), amountInput = document.getElementById('amount'), dateInput = document.getElementById('date');
-    const walletSelect = document.getElementById('wallet'), invoiceInput = document.getElementById('invoice'), isRecurringInput = document.getElementById('is-recurring'), installmentsInput = document.getElementById('installments');
-    const transactionIdInput = document.getElementById('transaction-id'), modalTitle = document.getElementById('modal-title');
-    const deleteConfirmBtn = document.getElementById('delete-confirm-btn'), deleteSeriesBtn = document.getElementById('delete-series-btn'), deleteOneBtn = document.getElementById('delete-one-btn');
-    const walletsBtn = document.getElementById('wallets-btn'), addWalletForm = document.getElementById('add-wallet-form'), walletListEl = document.getElementById('wallet-list');
-    
-    // --- ESTADO DA APLICAÇÃO ---
-    let transactions = JSON.parse(localStorage.getItem('transactions_v5')) || [];
-    let wallets = JSON.parse(localStorage.getItem('wallets_v5')) || [];
-    let currentDate = new Date();
-    let selectedType = 'expense';
-    let itemToDelete = { id: null, type: null, recurrenceId: null };
+    <div id="app-container" class="hidden">
+        <header>
+            <h1>Meu Controle Financeiro</h1>
+            <button id="wallets-btn" title="Gerenciar Carteiras">💼</button>
+        </header>
 
-    // --- FUNÇÕES ---
-    const formatCurrency = (value) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
-    const openModal = (modal) => modal.classList.add('active');
-    const closeModal = (modal) => modal.classList.remove('active');
-    const showAlert = (message) => { document.getElementById('alert-message').textContent = message; openModal(modals.alert); };
-    const saveToLocalStorage = () => { localStorage.setItem('transactions_v5', JSON.stringify(transactions)); localStorage.setItem('wallets_v5', JSON.stringify(wallets)); };
+        <main>
+            <section id="dashboard">
+                <div class="period-selector">
+                    <button id="prev-month-btn">&lt;</button>
+                    <h2 id="current-month-display"></h2>
+                    <button id="next-month-btn">&gt;</button>
+                </div>
+                <div class="summary-cards">
+                    <div class="card revenue"><h3>Receita do Mês</h3><p id="total-revenue">R$ 0,00</p></div>
+                    <div class="card expenses"><h3>Despesa do Mês</h3><p id="total-expenses">R$ 0,00</p></div>
+                    <div class="card balance"><h3>Balanço</h3><p id="balance">R$ 0,00</p></div>
+                </div>
+            </section>
+            <section id="transactions">
+                <h2>Lançamentos</h2>
+                <div id="transaction-list"></div>
+            </section>
+        </main>
 
-    const populateWalletSelect = () => { walletSelect.innerHTML = wallets.map(w => `<option value="${w.id}">${w.name}</option>`).join(''); };
+        <button id="add-transaction-btn" class="fab">+</button>
+        
+        <footer>
+            <input type="text" id="user-id-display" readonly title="Seu ID na nuvem. Clique para copiar.">
+        </footer>
+    </div>
 
-    const setupTransactionModal = (transaction = null) => {
-        transactionForm.reset();
-        populateWalletSelect();
-        const advancedOptions = document.getElementById('advanced-options');
-        if (transaction) {
-            modalTitle.textContent = 'Editar Lançamento';
-            transactionIdInput.value = transaction.id;
-            selectTransactionType(transaction.type);
-            descriptionInput.value = transaction.description;
-            amountInput.value = transaction.amount;
-            dateInput.value = transaction.date;
-            walletSelect.value = transaction.walletId;
-            invoiceInput.value = transaction.invoiceUrl || '';
-            isRecurringInput.checked = transaction.isRecurring || false;
-            advancedOptions.style.display = 'none'; // Esconde opções avançadas na edição
-        } else {
-            modalTitle.textContent = 'Novo Lançamento';
-            transactionIdInput.value = '';
-            dateInput.value = new Date().toISOString().split('T')[0];
-            selectTransactionType('expense');
-            advancedOptions.style.display = 'block';
+    <!-- Modals -->
+    <div id="transaction-modal" class="modal-overlay"> <div class="modal-content"> <h2 id="modal-title">Novo Lançamento</h2> <div class="modal-body"> <form id="transaction-form"> <input type="hidden" id="transaction-id"> <div class="type-selector" style="display: flex; gap: 10px; margin-bottom: 1rem;"> <button type="button" id="type-revenue-btn" class="revenue" style="flex: 1; padding: 0.75rem;">Receita</button> <button type="button" id="type-expense-btn" class="expense" style="flex: 1; padding: 0.75rem;">Despesa</button> </div> <div class="form-group"> <label for="description">Descrição</label> <input type="text" id="description" required> </div> <div class="form-group"> <label for="amount">Valor</label> <input type="number" id="amount" step="0.01" min="0" required> </div> <div class="form-group"> <label for="date">Data</label> <input type="date" id="date" required> </div> <div class="form-group"> <label for="wallet">Carteira</label> <select id="wallet" required></select> </div> </form> </div> <div class="modal-actions"> <button type="button" class="cancel-btn">Cancelar</button> <button type="submit" form="transaction-form" class="confirm-btn">Salvar</button> </div> </div> </div>
+    <div id="wallets-modal" class="modal-overlay"> <div class="modal-content"> <h2>Gerenciar Carteiras</h2> <div class="modal-body"> <ul id="wallet-list"></ul> <form id="add-wallet-form" style="display: flex; gap: 10px; margin-top: 1rem;"> <input type="text" id="new-wallet-name" placeholder="Nome da nova carteira" required style="flex-grow:1;"> <button type="submit" class="confirm-btn">Adicionar</button> </form> </div> <div class="modal-actions"> <button type="button" class="cancel-btn">Fechar</button> </div> </div> </div>
+    <div id="confirm-delete-modal" class="modal-overlay"> <div class="modal-content" style="text-align: center;"> <h2>Confirmar Exclusão</h2> <p>Você tem certeza?</p> <div class="modal-actions"> <button type="button" class="cancel-btn">Cancelar</button> <button type="button" id="delete-confirm-btn" class="delete-confirm-btn" style="background-color: var(--expenses-color); color: white;">Excluir</button> </div> </div> </div>
+    <div id="alert-modal" class="modal-overlay"> <div class="modal-content" style="text-align: center;"> <h2>Aviso</h2> <p id="alert-message"></p> <div class="modal-actions"> <button type="button" class="cancel-btn confirm-btn">OK</button> </div> </div> </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signOut, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, addDoc, onSnapshot, updateDoc, deleteDoc, writeBatch, query, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // --- CONFIGURAÇÃO E INICIALIZAÇÃO ---
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : { apiKey: "YOUR_API_KEY", authDomain: "...", projectId: "..." };
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // --- ELEMENTOS DO DOM ---
+        const loadingOverlay = document.getElementById('loading-overlay');
+        const appContainer = document.getElementById('app-container');
+        const userIdDisplay = document.getElementById('user-id-display');
+        const walletsBtn = document.getElementById('wallets-btn');
+        const addTransactionBtn = document.getElementById('add-transaction-btn');
+        const prevMonthBtn = document.getElementById('prev-month-btn');
+        const nextMonthBtn = document.getElementById('next-month-btn');
+        
+        const modals = {
+            transaction: document.getElementById('transaction-modal'),
+            wallets: document.getElementById('wallets-modal'),
+            confirmDelete: document.getElementById('confirm-delete-modal'),
+            alert: document.getElementById('alert-modal')
+        };
+        const transactionForm = document.getElementById('transaction-form');
+        const addWalletForm = document.getElementById('add-wallet-form');
+        const deleteConfirmBtn = document.getElementById('delete-confirm-btn');
+
+        // --- ESTADO DA APLICAÇÃO ---
+        let wallets = [];
+        let transactions = [];
+        let currentUser = null;
+        let currentDate = new Date();
+        let itemToDelete = null;
+
+        let walletsUnsubscribe = null;
+        let transactionsUnsubscribe = null;
+        
+        // --- FUNÇÕES DE RENDERIZAÇÃO E UI ---
+        const formatCurrency = (value) => value.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' });
+
+        function render() {
+            if (!currentUser) return;
+            renderSummary();
+            renderTransactionList();
         }
-        openModal(modals.transaction);
-    };
-    
-    const selectTransactionType = (type) => {
-        selectedType = type;
-        document.getElementById('type-revenue-btn').classList.toggle('active', type === 'revenue');
-        document.getElementById('type-expense-btn').classList.toggle('active', type === 'expense');
-    };
 
-    const render = () => {
-        const filteredTransactions = transactions.filter(t => {
-            const transactionDate = new Date(t.date);
-            const adjustedDate = new Date(transactionDate.valueOf() + transactionDate.getTimezoneOffset() * 60 * 1000);
-            return adjustedDate.getMonth() === currentDate.getMonth() && adjustedDate.getFullYear() === currentDate.getFullYear();
-        });
+        function renderSummary() {
+            document.getElementById('current-month-display').textContent = currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+            
+            const filtered = transactions.filter(t => {
+                const transactionDate = new Date(t.date);
+                const adjustedDate = new Date(transactionDate.valueOf() + transactionDate.getTimezoneOffset() * 60 * 1000);
+                return adjustedDate.getMonth() === currentDate.getMonth() && adjustedDate.getFullYear() === currentDate.getFullYear();
+            });
 
-        let totalRevenue = 0, totalExpenses = 0;
-        transactionList.innerHTML = '';
+            const totalRevenue = filtered.reduce((acc, t) => t.type === 'revenue' ? acc + t.amount : acc, 0);
+            const totalExpenses = filtered.reduce((acc, t) => t.type === 'expense' ? acc + t.amount : acc, 0);
+            const balance = totalRevenue - totalExpenses;
 
-        if (filteredTransactions.length === 0) {
-            transactionList.innerHTML = `<div class="empty-state"><p>Nenhum lançamento para este mês.</p></div>`;
-        } else {
-            filteredTransactions.sort((a, b) => new Date(b.date) - new Date(a.date));
-            filteredTransactions.forEach(t => {
-                if (t.type === 'revenue') totalRevenue += t.amount; else totalExpenses += t.amount;
+            document.getElementById('total-revenue').textContent = formatCurrency(totalRevenue);
+            document.getElementById('total-expenses').textContent = formatCurrency(totalExpenses);
+            document.getElementById('balance').textContent = formatCurrency(balance);
+            document.getElementById('balance').style.color = balance < 0 ? 'var(--expenses-color)' : 'var(--balance-color)';
+        }
+        
+        function renderTransactionList() {
+            const listEl = document.getElementById('transaction-list');
+            const filtered = transactions.filter(t => {
+                const transactionDate = new Date(t.date);
+                const adjustedDate = new Date(transactionDate.valueOf() + transactionDate.getTimezoneOffset() * 60 * 1000);
+                return adjustedDate.getMonth() === currentDate.getMonth() && adjustedDate.getFullYear() === currentDate.getFullYear();
+            }).sort((a,b) => new Date(b.date) - new Date(a.date));
+
+            if (filtered.length === 0) {
+                listEl.innerHTML = `<div style="text-align: center; color: #6c757d; padding: 2rem;">Nenhum lançamento para este mês.</div>`;
+                return;
+            }
+
+            listEl.innerHTML = filtered.map(t => {
                 const wallet = wallets.find(w => w.id === t.walletId);
-                const item = document.createElement('div');
-                item.className = `transaction-item ${t.type}`;
-                item.dataset.id = t.id;
-                if(t.recurrenceId) item.dataset.recurrenceId = t.recurrenceId;
-
-                let metaHTML = `<span class="date">${new Date(t.date).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</span> • <span>${wallet ? wallet.name : ''}</span>`;
-                if(t.installments) metaHTML += `<span class="installment">${t.installments.current}/${t.installments.total}</span>`;
-                if(t.isRecurring) metaHTML += `<span class="recurring" title="Lançamento Fixo">🔁</span>`;
-                if(t.invoiceUrl) {
-                    const isLink = t.invoiceUrl.startsWith('http');
-                    metaHTML += `<span class="invoice">${isLink ? `<a href="${t.invoiceUrl}" target="_blank" title="Ver Nota Fiscal">📄</a>` : `📄 N° ${t.invoiceUrl}`}</span>`;
-                }
-
-                item.innerHTML = `
+                return `
+                <div class="transaction-item ${t.type}" data-id="${t.id}">
                     <div class="icon">${t.type === 'revenue' ? '📈' : '📉'}</div>
                     <div class="details">
                         <p class="description">${t.description}</p>
-                        <div class="meta">${metaHTML}</div>
+                        <div class="meta"><span>${new Date(t.date).toLocaleDateString('pt-BR', {timeZone: 'UTC'})}</span> • <span>${wallet ? wallet.name : ''}</span></div>
                     </div>
-                    <div class="amount" style="color: ${t.type === 'revenue' ? 'var(--revenue-color)' : 'var(--expenses-color)'}">
-                        ${t.type === 'revenue' ? '+' : '-'} ${formatCurrency(t.amount)}
-                    </div>
-                    <div class="transaction-actions"><button class="edit-btn" title="Editar">✏️</button><button class="delete-btn" title="Excluir">🗑️</button></div>`;
-                transactionList.appendChild(item);
+                    <div class="amount" style="color: ${t.type === 'revenue' ? 'var(--revenue-color)' : 'var(--expenses-color)'}">${t.type === 'revenue' ? '+' : '-'} ${formatCurrency(t.amount)}</div>
+                    <div class="transaction-actions"><button class="edit-btn" title="Editar">✏️</button><button class="delete-btn" title="Excluir">🗑️</button></div>
+                </div>`;
+            }).join('');
+        }
+
+        function renderWallets() {
+            const listEl = document.getElementById('wallet-list');
+            if (wallets.length === 0) {
+                listEl.innerHTML = `<li>Nenhuma carteira encontrada.</li>`;
+                return;
+            }
+            listEl.innerHTML = wallets.map(w => {
+                const balance = transactions.reduce((acc, t) => t.walletId === w.id ? acc + (t.type === 'revenue' ? t.amount : -t.amount) : acc, 0);
+                return `
+                <li style="display: flex; justify-content: space-between; align-items: center; padding: 0.5rem 0;">
+                    <div>${w.name} <strong style="color: ${balance < 0 ? 'var(--expenses-color)' : 'var(--revenue-color)'};">${formatCurrency(balance)}</strong></div>
+                    <button class="delete-wallet-btn" data-id="${w.id}" title="Excluir" style="background:none; border:none; cursor:pointer; font-size: 1.2rem;">🗑️</button>
+                </li>`;
+            }).join('');
+        }
+
+        const openModal = (modal) => modal.classList.add('active');
+        const closeModal = (modal) => modal.classList.remove('active');
+        const showAlert = (message) => { document.getElementById('alert-message').textContent = message; openModal(modals.alert); };
+
+        // --- AUTENTICAÇÃO ---
+        onAuthStateChanged(auth, async (user) => {
+            loadingOverlay.classList.remove('hidden');
+            appContainer.classList.add('hidden');
+            if (walletsUnsubscribe) walletsUnsubscribe();
+            if (transactionsUnsubscribe) transactionsUnsubscribe();
+
+            if (user) {
+                currentUser = user;
+                userIdDisplay.value = user.uid;
+                await setupFirestoreListeners(user.uid);
+                loadingOverlay.classList.add('hidden');
+                appContainer.classList.remove('hidden');
+            } else {
+                try {
+                    if (typeof __initial_auth_token !== 'undefined') {
+                        await signInWithCustomToken(auth, __initial_auth_token);
+                    } else {
+                        await signInAnonymously(auth);
+                    }
+                } catch (error) {
+                    console.error("Erro no login:", error);
+                    loadingOverlay.querySelector('p').textContent = "Erro de conexão. Tente recarregar.";
+                }
+            }
+        });
+        
+        // --- SINCRONIZAÇÃO COM FIRESTORE ---
+        async function setupFirestoreListeners(userId) {
+            const walletsRef = collection(db, 'artifacts', appId, 'users', userId, 'wallets');
+            const transactionsRef = collection(db, 'artifacts', appId, 'users', userId, 'transactions');
+            
+            walletsUnsubscribe = onSnapshot(walletsRef, (snapshot) => {
+                wallets = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                if (snapshot.docs.length === 0 && snapshot.metadata.hasPendingWrites === false) {
+                    addDoc(walletsRef, { name: "Carteira Principal", createdAt: new Date() });
+                }
+                render();
+            });
+
+            transactionsUnsubscribe = onSnapshot(transactionsRef, (snapshot) => {
+                transactions = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                render();
             });
         }
         
-        totalRevenueEl.textContent = formatCurrency(totalRevenue);
-        totalExpensesEl.textContent = formatCurrency(totalExpenses);
-        const balance = totalRevenue - totalExpenses;
-        balanceEl.textContent = formatCurrency(balance);
-        balanceEl.style.color = balance < 0 ? 'var(--expenses-color)' : 'var(--balance-color)';
-        currentMonthDisplay.textContent = currentDate.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-    };
-
-    const handleFormSubmit = (event) => {
-        event.preventDefault();
-        const id = transactionIdInput.value;
-        const totalInstallments = parseInt(installmentsInput.value);
-
-        if (id) { // Editando
-            const transactionIndex = transactions.findIndex(t => t.id == id);
-            if (transactionIndex > -1) {
-                transactions[transactionIndex] = {
-                    ...transactions[transactionIndex],
-                    description: descriptionInput.value,
-                    amount: parseFloat(amountInput.value),
-                    date: dateInput.value,
-                    type: selectedType,
-                    walletId: parseInt(walletSelect.value),
-                    invoiceUrl: invoiceInput.value.trim(),
-                    isRecurring: isRecurringInput.checked
-                };
-            }
-        } else { // Adicionando
-            const recurrenceId = Date.now();
-            const baseData = {
-                amount: parseFloat(amountInput.value),
-                type: selectedType,
-                walletId: parseInt(walletSelect.value),
-                invoiceUrl: invoiceInput.value.trim(),
-                isRecurring: isRecurringInput.checked,
+        // --- FUNÇÕES CRUD (FIRESTORE) ---
+        function getCollections() {
+            if (!currentUser) throw new Error("Usuário não autenticado");
+            return {
+                walletsRef: collection(db, 'artifacts', appId, 'users', currentUser.uid, 'wallets'),
+                transactionsRef: collection(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions')
             };
+        }
 
-            if (totalInstallments > 0) {
-                for (let i = 1; i <= totalInstallments; i++) {
-                    const installmentDate = new Date(dateInput.value);
-                    installmentDate.setMonth(installmentDate.getMonth() + (i - 1));
-                    transactions.push({
-                        ...baseData,
-                        id: Date.now() + i,
-                        recurrenceId: recurrenceId,
-                        description: `${descriptionInput.value} (Parcela ${i}/${totalInstallments})`,
-                        date: installmentDate.toISOString().split('T')[0],
-                        installments: { current: i, total: totalInstallments }
-                    });
-                }
-            } else {
-                 transactions.push({
-                    ...baseData,
-                    id: recurrenceId,
-                    description: descriptionInput.value,
-                    date: dateInput.value,
-                });
+        async function handleAddWallet(e) {
+            e.preventDefault();
+            const input = document.getElementById('new-wallet-name');
+            const name = input.value.trim();
+            if (name) {
+                await addDoc(getCollections().walletsRef, { name, createdAt: new Date() });
+                input.value = '';
             }
         }
-        
-        saveToLocalStorage();
-        render();
-        closeModal(modals.transaction);
-    };
 
-    const handleTransactionClick = (e) => {
-        const actionButton = e.target.closest('.edit-btn, .delete-btn');
-        if (!actionButton) return;
-        const transactionItem = actionButton.closest('.transaction-item');
-        const id = parseInt(transactionItem.dataset.id);
-        const recurrenceId = transactionItem.dataset.recurrenceId ? parseInt(transactionItem.dataset.recurrenceId) : null;
-        
-        itemToDelete = { id, type: 'transaction', recurrenceId };
-
-        if (actionButton.classList.contains('edit-btn')) {
-            const transactionToEdit = transactions.find(t => t.id === id);
-            setupTransactionModal(transactionToEdit);
-        } else {
-            if (recurrenceId) {
-                openModal(modals.confirmDeleteSeries);
-            } else {
-                openModal(modals.confirmDelete);
+        async function handleDeleteWallet(id) {
+            const isInUse = transactions.some(t => t.walletId === id);
+            if (isInUse) {
+                showAlert("Não é possível excluir. A carteira está sendo usada em lançamentos.");
+                return;
             }
-        }
-    };
-    
-    const calculateWalletBalance = (walletId) => transactions.reduce((acc, t) => t.walletId === walletId ? acc + (t.type === 'revenue' ? t.amount : -t.amount) : acc, 0);
-
-    const renderWallets = () => {
-        walletListEl.innerHTML = '';
-        wallets.forEach(w => {
-            const balance = calculateWalletBalance(w.id);
-            const li = document.createElement('li');
-            li.innerHTML = `<div class="wallet-info"><span>${w.name}</span><span class="wallet-balance" style="color: ${balance < 0 ? 'var(--expenses-color)' : 'var(--revenue-color)'};">${formatCurrency(balance)}</span></div><button class="delete-wallet-btn" data-id="${w.id}" title="Excluir Carteira">🗑️</button>`;
-            walletListEl.appendChild(li);
-        });
-    };
-    
-    const handleDeleteConfirm = () => {
-        if (itemToDelete.type === 'transaction') {
-            transactions = transactions.filter(t => t.id !== itemToDelete.id);
-        } else if (itemToDelete.type === 'wallet') {
-            wallets = wallets.filter(w => w.id !== itemToDelete.id);
+            const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'wallets', id);
+            await deleteDoc(docRef);
             renderWallets();
         }
-        saveToLocalStorage();
-        render();
-        closeModal(modals.confirmDelete);
-    };
 
-    const handleDeleteSeries = () => {
-        transactions = transactions.filter(t => t.recurrenceId !== itemToDelete.recurrenceId);
-        saveToLocalStorage();
-        render();
-        closeModal(modals.confirmDeleteSeries);
-    };
-    
-    const handleDeleteOne = () => {
-        transactions = transactions.filter(t => t.id !== itemToDelete.id);
-        saveToLocalStorage();
-        render();
-        closeModal(modals.confirmDeleteSeries);
-    }
+        async function handleTransactionSubmit(e) {
+            e.preventDefault();
+            const id = transactionForm.elements['transaction-id'].value;
+            const transactionData = {
+                description: transactionForm.elements['description'].value,
+                amount: parseFloat(transactionForm.elements['amount'].value),
+                date: transactionForm.elements['date'].value,
+                walletId: transactionForm.elements['wallet'].value,
+                type: transactionForm.querySelector('.type-selector button.active').id.includes('revenue') ? 'revenue' : 'expense'
+            };
 
-    // --- EVENT LISTENERS ---
-    document.getElementById('add-transaction-btn').addEventListener('click', () => setupTransactionModal());
-    transactionForm.addEventListener('submit', handleFormSubmit);
-    transactionList.addEventListener('click', handleTransactionClick);
-    document.getElementById('prev-month-btn').addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); render(); });
-    document.getElementById('next-month-btn').addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); render(); });
-    document.getElementById('type-revenue-btn').addEventListener('click', () => selectTransactionType('revenue'));
-    document.getElementById('type-expense-btn').addEventListener('click', () => selectTransactionType('expense'));
-    deleteConfirmBtn.addEventListener('click', handleDeleteConfirm);
-    deleteSeriesBtn.addEventListener('click', handleDeleteSeries);
-    deleteOneBtn.addEventListener('click', handleDeleteOne);
-    walletsBtn.addEventListener('click', () => { renderWallets(); openModal(modals.wallets); });
-    addWalletForm.addEventListener('submit', (e) => { e.preventDefault(); const name = document.getElementById('new-wallet-name').value.trim(); if(name){ wallets.push({id: Date.now(), name}); document.getElementById('new-wallet-name').value = ''; saveToLocalStorage(); renderWallets(); } });
-    walletListEl.addEventListener('click', (e) => { if(e.target.classList.contains('delete-wallet-btn')){ const id = parseInt(e.target.dataset.id); if(transactions.some(t => t.walletId === id)){ showAlert("Não é possível excluir esta carteira, pois ela está sendo usada em lançamentos."); return; } itemToDelete = {id, type: 'wallet'}; openModal(modals.confirmDelete); } });
-    Object.values(modals).forEach(modal => { modal.addEventListener('click', (e) => { if (e.target === modal || e.target.classList.contains('cancel-btn')) closeModal(modal); }); });
-
-    // --- INICIALIZAÇÃO ---
-    function initialize() {
-        if(localStorage.getItem('transactions_v4') && !localStorage.getItem('transactions_v5')){
-            transactions = JSON.parse(localStorage.getItem('transactions_v4')) || [];
-            wallets = JSON.parse(localStorage.getItem('wallets_v4')) || [];
-            localStorage.removeItem('transactions_v4'); localStorage.removeItem('wallets_v4');
+            if (id) {
+                const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions', id);
+                await updateDoc(docRef, transactionData);
+            } else {
+                await addDoc(getCollections().transactionsRef, transactionData);
+            }
+            closeModal(modals.transaction);
         }
-        if (wallets.length === 0) wallets.push({ id: Date.now(), name: "Carteira Principal" });
-        let needsSave = transactions.some(t => typeof t.walletId === 'undefined');
-        if(needsSave) transactions.forEach(t => { if(typeof t.walletId === 'undefined') t.walletId = wallets[0].id; });
-        if(needsSave) saveToLocalStorage();
-        render();
-    }
-    initialize();
-});
-</script>
+        
+        async function handleDeleteTransaction(id) {
+            const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'transactions', id);
+            await deleteDoc(docRef);
+        }
+
+        // --- EVENT LISTENERS ---
+        prevMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() - 1); render(); });
+        nextMonthBtn.addEventListener('click', () => { currentDate.setMonth(currentDate.getMonth() + 1); render(); });
+        
+        addTransactionBtn.addEventListener('click', () => {
+            transactionForm.reset();
+            transactionForm.elements['transaction-id'].value = '';
+            document.getElementById('modal-title').textContent = 'Novo Lançamento';
+            document.getElementById('date').value = new Date().toISOString().split('T')[0];
+            const walletSelect = document.getElementById('wallet');
+            walletSelect.innerHTML = wallets.map(w => `<option value="${w.id}">${w.name}</option>`).join('');
+            document.getElementById('type-expense-btn').classList.add('active');
+            document.getElementById('type-revenue-btn').classList.remove('active');
+            openModal(modals.transaction);
+        });
+
+        walletsBtn.addEventListener('click', () => { renderWallets(); openModal(modals.wallets); });
+
+        transactionForm.addEventListener('submit', handleTransactionSubmit);
+        addWalletForm.addEventListener('submit', handleAddWallet);
+        deleteConfirmBtn.addEventListener('click', async () => {
+            if(itemToDelete && itemToDelete.type === 'transaction') await handleDeleteTransaction(itemToDelete.id);
+            if(itemToDelete && itemToDelete.type === 'wallet') await handleDeleteWallet(itemToDelete.id);
+            closeModal(modals.confirmDelete);
+            itemToDelete = null;
+        });
+        
+        document.getElementById('transaction-list').addEventListener('click', e => {
+            if (e.target.closest('.delete-btn')) {
+                const id = e.target.closest('.transaction-item').dataset.id;
+                itemToDelete = { type: 'transaction', id };
+                openModal(modals.confirmDelete);
+            }
+            if (e.target.closest('.edit-btn')) {
+                const id = e.target.closest('.transaction-item').dataset.id;
+                const t = transactions.find(tr => tr.id === id);
+                if(!t) return;
+                
+                transactionForm.reset();
+                transactionForm.elements['transaction-id'].value = t.id;
+                document.getElementById('modal-title').textContent = 'Editar Lançamento';
+                
+                const walletSelect = document.getElementById('wallet');
+                walletSelect.innerHTML = wallets.map(w => `<option value="${w.id}" ${w.id == t.walletId ? 'selected' : ''}>${w.name}</option>`).join('');
+
+                transactionForm.elements['description'].value = t.description;
+                transactionForm.elements['amount'].value = t.amount;
+                transactionForm.elements['date'].value = t.date;
+                
+                document.getElementById('type-expense-btn').classList.toggle('active', t.type === 'expense');
+                document.getElementById('type-revenue-btn').classList.toggle('active', t.type === 'revenue');
+
+                openModal(modals.transaction);
+            }
+        });
+        
+        document.getElementById('wallet-list').addEventListener('click', e => {
+            if (e.target.closest('.delete-wallet-btn')) {
+                const id = e.target.closest('.delete-wallet-btn').dataset.id;
+                itemToDelete = { type: 'wallet', id };
+                openModal(modals.confirmDelete);
+            }
+        });
+
+        transactionForm.querySelector('.type-selector').addEventListener('click', e => {
+            if (e.target.tagName === 'BUTTON') {
+                transactionForm.querySelector('.type-selector button.active').classList.remove('active');
+                e.target.classList.add('active');
+            }
+        });
+
+        userIdDisplay.addEventListener('click', () => {
+            try {
+                userIdDisplay.select();
+                userIdDisplay.setSelectionRange(0, 99999); // Para dispositivos móveis
+                document.execCommand('copy');
+                window.getSelection().removeAllRanges(); // Desseleciona o texto
+                showAlert("ID do usuário copiado para a área de transferência!");
+            } catch (err) {
+                console.error('Erro ao copiar:', err);
+                showAlert("Falha ao copiar. Por favor, copie o ID manualmente.");
+            }
+        });
+
+        Object.values(modals).forEach(modal => {
+            modal.addEventListener('click', e => { if (e.target === modal || e.target.classList.contains('cancel-btn')) closeModal(modal); });
+        });
+    </script>
 </body>
 </html>
